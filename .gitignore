@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Device secrets
+firmware/secrets.py
+
+# Waveshare drivers, downloaded by tools/deploy.sh
+firmware/lib/epd_v*.py

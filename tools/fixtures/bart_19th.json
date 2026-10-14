@@ -1,0 +1,17 @@
+{"root": {"@id": "1", "date": "10/14/2026", "time": "07:42:05 AM PDT",
+ "station": [{"name": "19th St. Oakland", "abbr": "19TH", "etd": [
+  {"destination": "Berryessa", "abbreviation": "BERY", "limited": "0", "estimate": [
+    {"minutes": "7", "platform": "2", "direction": "South", "length": "8", "color": "ORANGE", "hexcolor": "#ff9933", "bikeflag": "1", "delay": "0", "cancelflag": "0", "dynamicflag": "0"},
+    {"minutes": "22", "platform": "2", "direction": "South", "length": "8", "color": "ORANGE", "hexcolor": "#ff9933", "bikeflag": "1", "delay": "0", "cancelflag": "0", "dynamicflag": "0"}]},
+  {"destination": "Daly City", "abbreviation": "DALY", "limited": "0", "estimate": [
+    {"minutes": "3", "platform": "2", "direction": "South", "length": "10", "color": "GREEN", "hexcolor": "#339933", "bikeflag": "1", "delay": "0", "cancelflag": "0", "dynamicflag": "0"}]},
+  {"destination": "Millbrae", "abbreviation": "MLBR", "limited": "0", "estimate": [
+    {"minutes": "10", "platform": "2", "direction": "South", "length": "8", "color": "RED", "hexcolor": "#ff0000", "bikeflag": "1", "delay": "0", "cancelflag": "0", "dynamicflag": "0"}]},
+  {"destination": "Richmond", "abbreviation": "RICH", "limited": "0", "estimate": [
+    {"minutes": "Leaving", "platform": "1", "direction": "North", "length": "8", "color": "RED", "hexcolor": "#ff0000", "bikeflag": "1", "delay": "0", "cancelflag": "0", "dynamicflag": "0"},
+    {"minutes": "9", "platform": "1", "direction": "North", "length": "8", "color": "ORANGE", "hexcolor": "#ff9933", "bikeflag": "1", "delay": "0", "cancelflag": "0", "dynamicflag": "0"},
+    {"minutes": "14", "platform": "1", "direction": "North", "length": "8", "color": "RED", "hexcolor": "#ff0000", "bikeflag": "1", "delay": "0", "cancelflag": "0", "dynamicflag": "0"}]},
+  {"destination": "SF Airport", "abbreviation": "SFIA", "limited": "0", "estimate": [
+    {"minutes": "5", "platform": "2", "direction": "South", "length": "10", "color": "YELLOW", "hexcolor": "#ffff33", "bikeflag": "1", "delay": "0", "cancelflag": "0", "dynamicflag": "0"},
+    {"minutes": "20", "platform": "2", "direction": "South", "length": "10", "color": "YELLOW", "hexcolor": "#ffff33", "bikeflag": "1", "delay": "0", "cancelflag": "0", "dynamicflag": "0"}]}
+ ]}], "message": ""}}
