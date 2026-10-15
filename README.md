@@ -1,55 +1,55 @@
 # out-the-door
 
-A small e-ink display for the wall by the front door. It cycles through four screens, 20 seconds each:
+A small e-ink display for the wall by the front door, running on an Elecrow CrowPanel ESP32-S3 2.13" e-paper board. It cycles through four screens, 20 seconds each:
 
 1. **BART**: the next two trains from 19th St toward Richmond, SFO / Millbrae and Berryessa
 2. **Weather**: Oakland and San Francisco right now, with today's high and low
 3. **Oblique Strategies**: a card of the day
 4. **Moon**: tonight's phase and the next full moon
 
-From 11 pm to 6 am it stops cycling and just shows the card of the day.
+From 11 pm to 6 am it stops cycling, turns Wi-Fi off and just shows the card of the day. Any button wakes it for two minutes.
 
-![The four screens](previews/all_screens.png)
+**Buttons:** scroll the wheel to flip screens by hand. Press the wheel, or Menu, to jump to fresh train times. Back returns to the trains screen.
 
-## Hardware
-
-- Raspberry Pi Pico 2 W (with headers)
-- Waveshare Pico-ePaper-2.13 (250x122, black and white). It plugs straight onto the Pico.
-- A micro-USB cable and a USB wall adapter
+![The screens](previews/all_screens.png)
 
 ## Setup
 
-1. **Check the display version.** The back of the display board says V3 or V4. Set `DISPLAY_VERSION` in `firmware/config.py` to match.
-2. **Flash MicroPython.** Hold BOOTSEL while plugging the Pico in, then drag the Pico 2 W `.uf2` from [micropython.org/download](https://micropython.org/download/) onto the drive that appears.
-3. **Add your Wi-Fi.** Copy `firmware/secrets_example.py` to `firmware/secrets.py` and fill it in. You can use BART's shared key or [register your own](https://api.bart.gov/api/register.aspx).
-4. **Copy it over.** Run `pip install mpremote`, then `tools/deploy.sh`. The first run also downloads Waveshare's display drivers.
-5. **Check the screen.** Run `mpremote run tools/hello.py`. You should see a thin border on all four edges. If the top or bottom edge is cut off, set `DISPLAY_Y_OFFSET = 6` in `config.py` and deploy again.
-6. **Unplug it and plug it into the wall.** It starts on its own.
+1. **Check the board revision.** The back of the board says V1.0 or V1.2. Set `PANEL_REVISION` in `include/config.h` to `10` or `12`. V1.0 has an SSD1680 display controller and V1.2 a JD79661, and they are driven differently.
+2. **Install PlatformIO.** Either the VS Code extension, or `pip install platformio` for the command line.
+3. **Add your Wi-Fi.** Copy `src/secrets.example.h` to `src/secrets.h` and fill it in. You can use BART's shared key or [register your own](https://api.bart.gov/api/register.aspx).
+4. **Flash it.** Plug the board in over USB-C and run `pio run -t upload`. If the upload doesn't start, hold BOOT, tap RESET, then release BOOT.
+5. **Watch the log.** Run `pio device monitor` to see Wi-Fi and fetch messages.
+
+If the picture comes out upside down, set `PANEL_FLIP_180 1`. If it comes out as a negative, set `PANEL_INVERT 1`.
 
 ## Changing things
 
-Everything adjustable is in `firmware/config.py`: the station, which destinations count for each row, the cities, the time per screen and the quiet hours. Add cards to `firmware/cards.txt`, one per line. It ships with a short starter set, so paste in the full deck if you have it.
+Everything adjustable is in `include/config.h`: the station, which destinations count for each row, the cities, the time per screen and the quiet hours. The Oblique Strategies cards are in `lib/core/cards.cpp`. It ships with a short starter set, so add the rest of the deck if you have it.
 
-## Working on the screens without the Pico
+## Working on the screens without the board
 
-`tools/preview.py` runs the real drawing code on a laptop and writes PNGs to `previews/`. It uses sample data by default; pass `--live` to use real train times and weather. It needs Pillow (`pip install pillow`).
+`tools/host.sh` builds the drawing and data code for your laptop, runs the checks (time zone, BART and weather parsing, moon phase) and draws every screen into `previews/`. It needs a C++ compiler and git; with Pillow installed (`pip install pillow`) it also writes PNGs. GitHub runs the same checks, plus a full firmware build, on every push.
 
-`tools/test_logic.py` checks the time-zone, train-time, weather and moon calculations.
-
-Fonts are DejaVu Sans, pre-rendered to bitmaps by `tools/make_fonts.py`. Run it again if you change sizes.
+Fonts are DejaVu Sans, pre-rendered into Adafruit GFX format by `tools/make_fonts.py`.
 
 ## Layout
 
 ```
-firmware/          everything that goes on the Pico
-  main.py          boot, rotation loop, fetch schedule, quiet hours
-  config.py        settings
-  clock.py         Pacific time (DST included) and date helpers
-  net.py           Wi-Fi, HTTP, NTP
-  display.py       Waveshare driver wrapper, partial vs full refresh
-  gfx.py           text, header, dots, weather icons
-  sources/         BART, Open-Meteo, card of the day, moon maths
-  screens/         one draw() per screen
-  fonts/           generated bitmap fonts
-tools/             laptop-side scripts (preview, tests, fonts, deploy)
+include/config.h     settings
+src/                 board-only code
+  main.cpp           startup, rotation, buttons, fetch schedule, quiet hours
+  panel.cpp          e-paper driver for both board revisions
+  net.cpp            Wi-Fi, HTTPS, NTP clock
+  buttons.cpp        scroll wheel, Menu and Back
+lib/core/            portable code (also built on a laptop by tools/host.sh)
+  screens.cpp        the four screens and their icons
+  bart.cpp           BART departures: URL, parsing, countdown
+  weather.cpp        Open-Meteo: URL, parsing, icons
+  moon.cpp           moon phase maths
+  cards.cpp          Oblique Strategies deck
+  clock.cpp          Pacific time and date labels
+  text.cpp, fonts/   text drawing in DejaVu Sans
+host/                laptop build: shims, checks, sample data
+tools/               host.sh, font and preview scripts
 ```
