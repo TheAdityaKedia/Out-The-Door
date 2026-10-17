@@ -31,73 +31,6 @@ static void dottedRule(Adafruit_GFX &g, int x0, int x1, int y) {
   for (int x = x0; x < x1; x += 2) g.drawPixel(x, y, INK);
 }
 
-static void thickLine(Adafruit_GFX &g, int x0, int y0, int x1, int y1) {
-  g.drawLine(x0, y0, x1, y1, INK);
-  g.drawLine(x0 + 1, y0, x1 + 1, y1, INK);
-  g.drawLine(x0, y0 + 1, x1, y1 + 1, INK);
-}
-
-// ---- weather icons, centred on (cx, cy), about 32 px across
-
-static void sun(Adafruit_GFX &g, int cx, int cy, int r) {
-  g.fillCircle(cx, cy, r, INK);
-  for (int k = 0; k < 8; k++) {
-    const double a = k * M_PI / 4, c = cos(a), s = sin(a);
-    thickLine(g, (int)(cx + (r + 3) * c), (int)(cy + (r + 3) * s), (int)(cx + (r + 7) * c),
-              (int)(cy + (r + 7) * s));
-  }
-}
-
-static void cloud(Adafruit_GFX &g, int cx, int cy) {
-  g.fillCircle(cx - 8, cy, 6, INK);
-  g.fillCircle(cx + 2, cy - 4, 8, INK);
-  g.fillCircle(cx + 10, cy + 1, 5, INK);
-  g.fillRect(cx - 8, cy, 18, 7, INK);
-}
-
-static void icon(Adafruit_GFX &g, Icon kind, int cx, int cy) {
-  switch (kind) {
-    case Icon::Sun:
-      sun(g, cx, cy, 9);
-      break;
-    case Icon::Moon:
-      g.fillCircle(cx, cy, 10, INK);
-      g.fillCircle(cx + 6, cy - 4, 9, PAPER);
-      break;
-    case Icon::Partly:
-      sun(g, cx + 5, cy - 6, 7);
-      g.fillRect(cx - 16, cy - 2, 30, 14, PAPER);
-      cloud(g, cx - 2, cy + 4);
-      break;
-    case Icon::Fog:
-      cloud(g, cx, cy - 4);
-      g.fillRect(cx - 16, cy + 7, 26, 2, INK);
-      g.fillRect(cx - 10, cy + 11, 26, 2, INK);
-      g.fillRect(cx - 16, cy + 15, 24, 2, INK);
-      break;
-    case Icon::Rain:
-      cloud(g, cx, cy - 4);
-      for (int dx = -8; dx <= 8; dx += 8) thickLine(g, cx + dx, cy + 7, cx + dx - 3, cy + 14);
-      break;
-    case Icon::Snow:
-      cloud(g, cx, cy - 4);
-      g.fillRect(cx - 9, cy + 8, 3, 3, INK);
-      g.fillRect(cx - 1, cy + 12, 3, 3, INK);
-      g.fillRect(cx + 7, cy + 8, 3, 3, INK);
-      break;
-    case Icon::Storm:
-      cloud(g, cx, cy - 4);
-      g.fillRect(cx - 5, cy + 3, 11, 4, PAPER);
-      g.fillTriangle(cx + 2, cy + 4, cx - 4, cy + 12, cx + 1, cy + 12, INK);
-      g.fillTriangle(cx + 5, cy + 9, cx - 1, cy + 9, cx - 3, cy + 19, INK);
-      break;
-    case Icon::Cloud:
-    default:
-      cloud(g, cx, cy);
-      break;
-  }
-}
-
 // ---- screens
 
 void drawTrains(Adafruit_GFX &g, const Now &now, const TrainsView &v) {
@@ -145,34 +78,114 @@ void drawTrains(Adafruit_GFX &g, const Now &now, const TrainsView &v) {
   }
 }
 
+// ---- small outline weather icons, centred on (cx, cy), about 20 px across
+
+static void smallCloud(Adafruit_GFX &g, int cx, int cy) {
+  g.fillCircle(cx - 4, cy + 1, 4, INK);
+  g.fillCircle(cx + 1, cy - 2, 5, INK);
+  g.fillCircle(cx + 6, cy + 1, 3, INK);
+  g.fillRect(cx - 4, cy + 1, 10, 4, INK);
+}
+
+static void smallIcon(Adafruit_GFX &g, Icon kind, int cx, int cy) {
+  switch (kind) {
+    case Icon::Sun:
+      g.drawCircle(cx, cy, 5, INK);
+      g.drawCircle(cx, cy, 4, INK);
+      for (int k = 0; k < 8; k++) {
+        const double a = k * M_PI / 4, c = cos(a), s = sin(a);
+        g.drawLine((int)lround(cx + 7 * c), (int)lround(cy + 7 * s), (int)lround(cx + 10 * c),
+                   (int)lround(cy + 10 * s), INK);
+      }
+      break;
+    case Icon::Moon:
+      g.fillCircle(cx, cy, 7, INK);
+      g.fillCircle(cx + 4, cy - 3, 6, PAPER);
+      break;
+    case Icon::Partly:
+      g.drawCircle(cx + 4, cy - 4, 4, INK);
+      g.fillRect(cx - 9, cy - 1, 14, 9, PAPER);
+      smallCloud(g, cx - 2, cy + 2);
+      break;
+    case Icon::Fog:
+      g.fillRect(cx - 10, cy - 5, 20, 2, INK);
+      g.fillRect(cx - 6, cy - 1, 16, 2, INK);
+      g.fillRect(cx - 10, cy + 3, 18, 2, INK);
+      break;
+    case Icon::Rain:
+      smallCloud(g, cx, cy - 3);
+      for (int dx = -4; dx <= 4; dx += 4) g.drawLine(cx + dx, cy + 4, cx + dx - 2, cy + 8, INK);
+      break;
+    case Icon::Snow:
+      smallCloud(g, cx, cy - 3);
+      for (int dx = -4; dx <= 4; dx += 4) g.fillRect(cx + dx, cy + 5 + (dx == 0 ? 2 : 0), 2, 2, INK);
+      break;
+    case Icon::Storm:
+      smallCloud(g, cx, cy - 3);
+      g.fillTriangle(cx + 1, cy + 2, cx - 3, cy + 7, cx, cy + 7, INK);
+      g.fillTriangle(cx + 2, cy + 6, cx - 1, cy + 6, cx - 2, cy + 11, INK);
+      break;
+    case Icon::Cloud:
+    default:
+      smallCloud(g, cx, cy);
+      break;
+  }
+}
+
+// A rounded pill with centred text: solid black for a warning, else outlined.
+static void pill(Adafruit_GFX &g, int x0, int x1, int y0, int y1, const char *text, bool warn) {
+  const int w = x1 - x0, h = y1 - y0, r = 7;
+  if (warn) {
+    g.fillRoundRect(x0, y0, w, h, r, INK);
+  } else {
+    g.drawRoundRect(x0, y0, w, h, r, INK);
+  }
+  drawTextCenter(g, SANS10, (x0 + x1) / 2, y0 + 1, text, warn ? PAPER : INK);
+}
+
 void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, const CityWeather *cities) {
   char buf[32];
   formatDayMonthDay(now, buf, sizeof buf);
   header(g, "Weather", buf);
-  const int half = SCREEN_W / 2;
-  g.drawFastVLine(half, 20, SCREEN_H - 32, INK);
+  g.drawFastHLine(4, 68, 242, INK);
   for (int i = 0; i < 2; i++) {
-    const int x0 = i * half, cx = x0 + half / 2;
-    drawTextCenter(g, BOLD12, cx, 19, config[i].label, INK);
+    const int row = i ? 72 : 20;
+    drawText(g, BOLD12, 4, row, config[i].label, INK);
     if (!cities) {
-      drawTextCenter(g, BOLD30, cx, 50, "--", INK);
+      drawText(g, BOLD30, 4, row + 13, "--", INK);
       continue;
     }
     const CityWeather &c = cities[i];
-    icon(g, c.icon, x0 + 24, 62);
     snprintf(buf, sizeof buf, "%d\xB0", c.temp);
-    drawText(g, BOLD30, x0 + 46, 40, buf, INK);
-    drawTextCenter(g, BOLD12, x0 + 46 + (half - 50) / 2, 72, c.label, INK);
-    snprintf(buf, sizeof buf, "H %d  L %d", c.high, c.low);
-    drawTextCenter(g, SANS10, cx, 88, buf, INK);
-    // Today's peak UV and the current air quality, whichever are known.
-    char uv[12] = "", aqi[12] = "";
-    if (c.uv >= 0) snprintf(uv, sizeof uv, "UV %d", c.uv);
-    if (c.aqi >= 0) snprintf(aqi, sizeof aqi, "AQI %d", c.aqi);
-    snprintf(buf, sizeof buf, "%s%s%s", uv, uv[0] && aqi[0] ? "  " : "", aqi);
-    if (buf[0]) drawTextCenter(g, SANS10, cx, 102, buf, INK);
+    drawText(g, BOLD30, 4, row + 13, buf, INK);
+    smallIcon(g, c.icon, 74, row + 27);
+
+    // Where today's temperature sits between the low and the high.
+    const int bx0 = 124, bx1 = 242, by0 = row + 4, by1 = row + 11;
+    g.fillRect(bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, PAPER);
+    g.drawRect(bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, INK);
+    int mx = c.high > c.low ? bx0 + (c.temp - c.low) * (bx1 - bx0) / (c.high - c.low) : (bx0 + bx1) / 2;
+    if (mx < bx0 + 4) mx = bx0 + 4;
+    if (mx > bx1 - 4) mx = bx1 - 4;
+    g.fillTriangle(mx - 4, by0 - 4, mx + 4, by0 - 4, mx, by0 + 1, INK);
+    g.fillRect(mx - 1, by0, 2, by1 - by0 + 1, INK);
+    snprintf(buf, sizeof buf, "L %d\xB0", c.low);
+    drawText(g, SANS10, bx0, row + 13, buf, INK);
+    drawTextCenter(g, SANS10, (bx0 + bx1) / 2 + 1, row + 13, c.label, INK);
+    snprintf(buf, sizeof buf, "H %d\xB0", c.high);
+    drawTextRight(g, SANS10, bx1, row + 13, buf, INK);
+
+    if (c.uv >= 0) {
+      const char *rating = c.uv <= 2 ? "low" : c.uv <= 5 ? "ok" : c.uv <= 7 ? "high" : "v.high";
+      snprintf(buf, sizeof buf, "UV %d %s", c.uv, rating);
+      pill(g, 88, 164, row + 27, row + 41, buf, c.uv > 5);
+    }
+    if (c.aqi >= 0) {
+      const char *rating = c.aqi <= 50 ? "good" : c.aqi <= 100 ? "fair" : c.aqi <= 150 ? "bad" : "v.bad";
+      snprintf(buf, sizeof buf, "AQI %d %s", c.aqi, rating);
+      pill(g, 168, 244, row + 27, row + 41, buf, c.aqi > 100);
+    }
   }
-  pageDots(g, 1);
 }
 
 void drawOblique(Adafruit_GFX &g, const Now &now, const char *card, int page) {
