@@ -3,7 +3,7 @@
 //
 // The board spends almost all its time in deep sleep. Once a minute it wakes,
 // fetches train times, redraws the trains screen and goes back to sleep. A
-// button wakes it for a couple of minutes of browsing, with screens cycling
+// press of the wheel wakes it for five minutes of browsing, with screens cycling
 // and the wheel flipping between them. In quiet hours it shows the card of
 // the day and sleeps until morning.
 #include <Arduino.h>
@@ -23,7 +23,7 @@
 #include "weather.h"
 
 // After a button press the board stays awake this long, even in quiet hours.
-static const uint32_t WAKE_MS = 2 * 60 * 1000;
+static const uint32_t WAKE_MS = 5 * 60 * 1000;
 // Minimum gap between attempts when a fetch keeps failing while awake.
 static const uint32_t TRAINS_RETRY_S = 15, WEATHER_RETRY_S = 60;
 // How often to resync the clock over NTP.
@@ -162,16 +162,12 @@ static uint64_t secondsToNextWake() {
   const uint64_t seconds = secondsToNextWake();
   Serial.printf("sleep: %llu s\n", seconds);
   esp_sleep_enable_timer_wakeup(seconds * 1000000ULL);
-  uint64_t mask = 0;
-  for (int pin : BUTTON_PINS) {
-    if (digitalRead(pin) == LOW) continue;  // held now; waking on it would loop
-    rtc_gpio_pullup_en((gpio_num_t)pin);
-    rtc_gpio_pulldown_dis((gpio_num_t)pin);
-    mask |= 1ULL << pin;
-  }
-  if (mask) {
+  // Only pressing the wheel wakes it, so a bump to the other buttons doesn't.
+  if (digitalRead(WAKE_PIN) == HIGH) {  // if held now, waking on it would loop
+    rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN);
+    rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN);
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-    esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW);
+    esp_sleep_enable_ext1_wakeup(1ULL << WAKE_PIN, ESP_EXT1_WAKEUP_ANY_LOW);
   }
   Serial.flush();
   esp_deep_sleep_start();
@@ -203,7 +199,7 @@ void setup() {
   tzset();
   const esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
   const bool fromSleep = cause == ESP_SLEEP_WAKEUP_TIMER || cause == ESP_SLEEP_WAKEUP_EXT1;
-  for (int pin : BUTTON_PINS) rtc_gpio_deinit((gpio_num_t)pin);
+  rtc_gpio_deinit((gpio_num_t)WAKE_PIN);
   buttonsBegin();
   panel.begin(fromSleep);
 

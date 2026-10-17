@@ -7,7 +7,7 @@ A small e-ink display for the wall by the front door, running on an Elecrow Crow
 3. **Oblique Strategies**: a card of the day
 4. **Moon**: tonight's phase and the next full moon
 
-To save battery it sleeps almost all the time: once a minute it wakes for a couple of seconds, fetches train times, updates the trains screen and goes back to sleep. Any button wakes it for two minutes, during which the screens cycle every 15 seconds. From 10 pm to 6 am it shows the card of the day and sleeps until morning. The clock at the top of the trains screen shows when it last updated, so if the battery runs flat the screen is visibly stale.
+To save battery it sleeps almost all the time: once a minute it wakes for a couple of seconds, fetches train times, updates the trains screen and goes back to sleep. Pressing the wheel wakes it for five minutes, during which the screens cycle every 15 seconds and the wheel flips between them; any button press restarts the five minutes. From 10 pm to 6 am it shows the card of the day and sleeps until morning. The clock at the top of the trains screen shows when it last updated, so if the battery runs flat the screen is visibly stale.
 
 **Battery:** a 3.7 V single-cell LiPo with a 2-pin JST SH 1.0 mm plug (check the polarity against the board). It charges over the board's USB-C at about 330 mA, so use 300 mAh or more; 2000 mAh lasts a few weeks.
 
