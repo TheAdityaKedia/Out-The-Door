@@ -68,6 +68,9 @@ static void fetchWeather() {
   String body;
   CityWeather fresh[2];
   if (httpGet(url, body) && parseWeather(body.c_str(), fresh, 2)) {
+    // Air quality is a second request; the screen leaves it out if this fails.
+    airQualityUrl(CITIES, 2, url, sizeof url);
+    if (httpGet(url, body)) parseAirQuality(body.c_str(), fresh, 2);
     memcpy(weather, fresh, sizeof weather);
     haveWeather = true;
     weatherAt = nowSeconds();

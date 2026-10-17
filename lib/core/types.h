@@ -23,6 +23,8 @@ enum class Icon : uint8_t { Sun, Moon, Partly, Cloud, Fog, Rain, Snow, Storm };
 
 struct CityWeather {
   int temp, high, low;
+  int uv;   // today's peak UV index; -1 if unknown
+  int aqi;  // current US AQI; -1 if unknown
   Icon icon;
   const char *label;
 };

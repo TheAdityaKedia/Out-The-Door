@@ -87,6 +87,10 @@ static void checkBart(const std::string &dir) {
 static void checkWeather(const std::string &dir) {
   CityWeather w[2];
   CHECK(parseWeather(readFile(dir + "/weather.json").c_str(), w, 2));
+  CHECK(w[0].uv == 6 && w[1].uv == 5 && w[0].aqi == -1);
+  CHECK(parseAirQuality(readFile(dir + "/air_quality.json").c_str(), w, 2));
+  CHECK(w[0].aqi == 42 && w[1].aqi == 38);
+  CHECK(!parseAirQuality("not json", w, 2) && w[0].aqi == 42);
   CHECK(w[0].temp == 75 && w[0].high == 78 && w[0].low == 58 && w[0].icon == Icon::Sun);
   CHECK(w[1].temp == 63 && w[1].icon == Icon::Fog);
   char url[512];
@@ -141,6 +145,7 @@ int main(int argc, char **argv) {
   parseBart(readFile(fixtures + "/bart_19th.json").c_str(), TRAIN_ROWS, TRAIN_ROW_COUNT, rows);
   CityWeather cities[2];
   parseWeather(readFile(fixtures + "/weather.json").c_str(), cities, 2);
+  parseAirQuality(readFile(fixtures + "/air_quality.json").c_str(), cities, 2);
   const char *card = cardForDay(now.localDays);
 
   auto trains = [&](long age, bool have) {

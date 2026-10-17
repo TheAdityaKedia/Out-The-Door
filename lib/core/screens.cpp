@@ -162,9 +162,15 @@ void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, cons
     icon(g, c.icon, x0 + 24, 62);
     snprintf(buf, sizeof buf, "%d\xB0", c.temp);
     drawText(g, BOLD30, x0 + 46, 40, buf, INK);
-    drawTextCenter(g, BOLD12, x0 + 46 + (half - 50) / 2, 76, c.label, INK);
+    drawTextCenter(g, BOLD12, x0 + 46 + (half - 50) / 2, 72, c.label, INK);
     snprintf(buf, sizeof buf, "H %d  L %d", c.high, c.low);
-    drawTextCenter(g, SANS10, cx, 96, buf, INK);
+    drawTextCenter(g, SANS10, cx, 88, buf, INK);
+    // Today's peak UV and the current air quality, whichever are known.
+    char uv[12] = "", aqi[12] = "";
+    if (c.uv >= 0) snprintf(uv, sizeof uv, "UV %d", c.uv);
+    if (c.aqi >= 0) snprintf(aqi, sizeof aqi, "AQI %d", c.aqi);
+    snprintf(buf, sizeof buf, "%s%s%s", uv, uv[0] && aqi[0] ? "  " : "", aqi);
+    if (buf[0]) drawTextCenter(g, SANS10, cx, 102, buf, INK);
   }
   pageDots(g, 1);
 }
