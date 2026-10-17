@@ -49,7 +49,7 @@ static const int QUIET_START = 23;
 static const int QUIET_END = 6;
 
 // A full refresh (with the e-ink flash) every this many screen changes.
-static const int FULL_REFRESH_EVERY = 10;
+static const int FULL_REFRESH_EVERY = 40;
 
 // Pacific time, with US daylight-saving rules.
 static const char *const TIME_ZONE = "PST8PDT,M3.2.0,M11.1.0";
