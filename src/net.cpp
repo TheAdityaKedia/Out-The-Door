@@ -30,23 +30,34 @@ void wifiOff() {
   WiFi.mode(WIFI_OFF);
 }
 
-bool httpGet(const char *url, String &body) {
-  if (!wifiConnect()) return false;
+// One attempt at a GET. Returns the HTTP status, or a negative HTTPClient error.
+static int getOnce(const char *url, String &body) {
   WiFiClientSecure client;
   // The data is public and read-only, so the certificate isn't checked; this
   // avoids bundling root certificates that expire.
   client.setInsecure();
   HTTPClient http;
   http.setTimeout(15000);
-  if (!http.begin(client, url)) return false;
+  if (!http.begin(client, url)) return -1;
   const int status = http.GET();
-  const bool ok = status == HTTP_CODE_OK;
-  if (ok)
-    body = http.getString();
-  else
-    Serial.printf("http: %d for %s\n", status, url);
+  if (status == HTTP_CODE_OK) body = http.getString();
   http.end();
-  return ok;
+  return status;
+}
+
+bool httpGet(const char *url, String &body) {
+  // Retries transient failures (dropped connections, TLS hiccups, 5xx) with a
+  // short backoff, reconnecting Wi-Fi if it went away.
+  static const int ATTEMPTS = 3;
+  for (int attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    if (!wifiConnect()) return false;
+    const int status = getOnce(url, body);
+    Serial.printf("http: %d (try %d) for %.48s\n", status, attempt, url);
+    if (status == HTTP_CODE_OK) return true;
+    if (status >= 400 && status < 500) return false;  // won't fix itself
+    if (attempt < ATTEMPTS) delay(1000 * attempt);
+  }
+  return false;
 }
 
 bool clockValid() { return time(nullptr) > 1700000000; }  // after Nov 2023
