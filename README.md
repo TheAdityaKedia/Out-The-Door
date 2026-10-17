@@ -11,7 +11,7 @@ To save battery it sleeps almost all the time, resting on the moon screen, which
 
 **Battery:** a 3.7 V single-cell LiPo with a 2-pin JST SH 1.0 mm plug (check the polarity against the board). It charges over the board's USB-C at about 330 mA, so use 300 mAh or more; A 2000 mAh cell should last months, depending on how often you wake it.
 
-**Buttons:** scroll the wheel to flip screens by hand. Press the wheel to wake it or jump to fresh train times. Back returns to the trains screen. Menu puts it to sleep on a screensaver drawn in four greys until the wheel is pressed. It ships with Hokusai's *Red Fuji*; personal images can go in the git-ignored `art/local/screensavers.h`, and each trip to the screensaver shows the next one.
+**Buttons:** scroll the wheel to flip screens by hand. Press the wheel to wake it or jump to fresh train times. Back returns to the trains screen. Menu puts it to sleep on a screensaver drawn in four greys until the wheel is pressed. It ships with Hokusai's *Red Fuji*; personal images can go in the git-ignored `art/local/screensavers.h`, and each press of Menu, even while it's asleep, shows the next one.
 
 ![The screens](previews/all_screens.png)
 

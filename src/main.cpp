@@ -157,12 +157,21 @@ static uint64_t secondsToNextWake() {
   const uint64_t seconds = secondsToNextWake();
   Serial.printf("sleep: %llu s\n", seconds);
   esp_sleep_enable_timer_wakeup(seconds * 1000000ULL);
-  // Only pressing the wheel wakes it, so a bump to the other buttons doesn't.
-  if (digitalRead(WAKE_PIN) == HIGH) {  // if held now, waking on it would loop
-    rtc_gpio_pullup_en((gpio_num_t)WAKE_PIN);
-    rtc_gpio_pulldown_dis((gpio_num_t)WAKE_PIN);
+  // Pressing the wheel wakes it; Menu wakes it straight onto the next
+  // screensaver. Wait for both to be let go, or waking on them would loop.
+  const uint32_t start = millis();
+  while ((digitalRead(WAKE_PIN) == LOW || digitalRead(MENU_PIN) == LOW) && millis() - start < 3000) delay(10);
+  delay(100);  // let the contacts settle so a bounce doesn't wake it again
+  uint64_t mask = 0;
+  for (int pin : {WAKE_PIN, MENU_PIN}) {
+    if (digitalRead(pin) == LOW) continue;
+    rtc_gpio_pullup_en((gpio_num_t)pin);
+    rtc_gpio_pulldown_dis((gpio_num_t)pin);
+    mask |= 1ULL << pin;
+  }
+  if (mask) {
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-    esp_sleep_enable_ext1_wakeup(1ULL << WAKE_PIN, ESP_EXT1_WAKEUP_ANY_LOW);
+    esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW);
   }
   Serial.flush();
   esp_deep_sleep_start();
@@ -210,12 +219,17 @@ void setup() {
   const esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
   const bool fromSleep = cause == ESP_SLEEP_WAKEUP_TIMER || cause == ESP_SLEEP_WAKEUP_EXT1;
   rtc_gpio_deinit((gpio_num_t)WAKE_PIN);
+  rtc_gpio_deinit((gpio_num_t)MENU_PIN);
   buttonsBegin();
   panel.begin(fromSleep);
   if (cause != ESP_SLEEP_WAKEUP_TIMER) restingOnArt = false;
 
   Serial.printf("wake: cause %d\n", (int)cause);
   if (cause == ESP_SLEEP_WAKEUP_TIMER) tick();
+  if (cause == ESP_SLEEP_WAKEUP_EXT1 && (esp_sleep_get_ext1_wakeup_status() & (1ULL << MENU_PIN))) {
+    showScreensaver();  // Menu while asleep: straight to the next screensaver
+    sleepNow();
+  }
 
   if (!fromSleep) {
     // Power on or reset: start from nothing.
