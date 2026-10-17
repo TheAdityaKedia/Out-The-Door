@@ -15,3 +15,6 @@ __pycache__/
 
 # Your own Oblique Strategies deck (see lib/core/cards.cpp)
 lib/core/cards_local.h
+
+# Personal screensaver art, kept off GitHub (see src/main.cpp)
+art/local/

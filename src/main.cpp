@@ -22,6 +22,10 @@
 #include "weather.h"
 
 #include "../art/red_fuji.h"
+#if __has_include("../art/local/screensavers.h")
+#include "../art/local/screensavers.h"
+#define HAVE_LOCAL_SCREENSAVERS
+#endif
 
 // After a wake or a button press the board stays awake this long.
 static const uint32_t WAKE_MS = 5 * 60 * 1000;
@@ -164,11 +168,24 @@ static uint64_t secondsToNextWake() {
   esp_deep_sleep_start();
 }
 
-// The screensaver: Hokusai's Red Fuji in four greys.
+// The screensavers, in four greys: Hokusai's Red Fuji, plus any personal
+// ones in the git-ignored art/local/screensavers.h. Each trip to the
+// screensaver shows the next one.
 static uint8_t greys[SCREEN_W * SCREEN_H];
+RTC_DATA_ATTR static int screensaverIndex;
 
 static void showScreensaver() {
-  unpackRedFuji(greys);
+#ifdef HAVE_LOCAL_SCREENSAVERS
+  const int locals = sizeof(LOCAL_SCREENSAVERS) / sizeof(LOCAL_SCREENSAVERS[0]);
+#else
+  const int locals = 0;
+#endif
+  const int i = screensaverIndex % (1 + locals);
+  if (i == 0) unpackRedFuji(greys);
+#ifdef HAVE_LOCAL_SCREENSAVERS
+  else LOCAL_SCREENSAVERS[i - 1](greys);
+#endif
+  screensaverIndex = (i + 1) % (1 + locals);
   panel.showGrey4(greys);
   restingOnArt = true;
 }
