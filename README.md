@@ -7,9 +7,9 @@ A small e-ink display for the wall by the front door, running on an Elecrow Crow
 3. **Oblique Strategies**: a card of the day
 4. **Moon**: tonight's phase and the next full moon
 
-To save battery it sleeps almost all the time: once a minute it wakes for a couple of seconds, fetches train times, updates the trains screen and goes back to sleep. Pressing the wheel wakes it for five minutes, during which the screens cycle every 15 seconds and the wheel flips between them; any button press restarts the five minutes. From 10 pm to 6 am it shows the card of the day and sleeps until morning. The clock at the top of the trains screen shows when it last updated, so if the battery runs flat the screen is visibly stale.
+To save battery it sleeps almost all the time, resting on the moon screen, which it redraws once an hour. Press the wheel to wake it: it fetches fresh train times and weather, cycles through the screens every 15 seconds for five minutes (the wheel flips between them, and any button press restarts the five minutes), then returns to the moon and sleeps.
 
-**Battery:** a 3.7 V single-cell LiPo with a 2-pin JST SH 1.0 mm plug (check the polarity against the board). It charges over the board's USB-C at about 330 mA, so use 300 mAh or more; 2000 mAh lasts a few weeks.
+**Battery:** a 3.7 V single-cell LiPo with a 2-pin JST SH 1.0 mm plug (check the polarity against the board). It charges over the board's USB-C at about 330 mA, so use 300 mAh or more; A 2000 mAh cell should last months, depending on how often you wake it.
 
 **Buttons:** scroll the wheel to flip screens by hand. Press the wheel, or Menu, to jump to fresh train times. Back returns to the trains screen.
 
@@ -27,7 +27,7 @@ If the picture comes out upside down, set `PANEL_FLIP_180 1`. If it comes out as
 
 ## Changing things
 
-Everything adjustable is in `include/config.h`: the station, which destinations count for each row, the cities, the time per screen and the quiet hours. The Oblique Strategies cards are in `lib/core/cards.cpp`, which ships with a short starter set. To use your own deck, put it in `lib/core/cards_local.h` (one quoted card per line, each followed by a comma). That file is git-ignored, so it stays on your computer.
+Everything adjustable is in `include/config.h`: the station, which destinations count for each row, the cities, and the time per screen. The Oblique Strategies cards are in `lib/core/cards.cpp`, which ships with a short starter set. To use your own deck, put it in `lib/core/cards_local.h` (one quoted card per line, each followed by a comma). That file is git-ignored, so it stays on your computer.
 
 ## Working on the screens without the board
 
@@ -40,7 +40,7 @@ Fonts are DejaVu Sans, pre-rendered into Adafruit GFX format by `tools/make_font
 ```
 include/config.h     settings
 src/                 board-only code
-  main.cpp           startup, rotation, buttons, fetch schedule, quiet hours
+  main.cpp           startup, rotation, buttons, fetch schedule, sleep
   panel.cpp          e-paper driver for both board revisions
   net.cpp            Wi-Fi, HTTPS, NTP clock
   buttons.cpp        scroll wheel, Menu and Back

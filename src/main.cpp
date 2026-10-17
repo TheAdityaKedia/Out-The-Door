@@ -1,11 +1,10 @@
 // out-the-door: BART departures, weather, an Oblique Strategies card and the
 // moon phase on the CrowPanel's 2.13" e-paper screen, run from a battery.
 //
-// The board spends almost all its time in deep sleep. Once a minute it wakes,
-// fetches train times, redraws the trains screen and goes back to sleep. A
-// press of the wheel wakes it for five minutes of browsing, with screens cycling
-// and the wheel flipping between them. In quiet hours it shows the card of
-// the day and sleeps until morning.
+// The board spends almost all its time in deep sleep, resting on the moon
+// screen, which it redraws once an hour. A press of the wheel wakes it for five
+// minutes, starting on fresh train times, with screens cycling and the wheel
+// flipping between them; then it returns to the moon and sleeps.
 #include <Arduino.h>
 #include <driver/rtc_io.h>
 #include <esp_sleep.h>
@@ -22,7 +21,7 @@
 #include "secrets.h"
 #include "weather.h"
 
-// After a button press the board stays awake this long, even in quiet hours.
+// After a wake or a button press the board stays awake this long.
 static const uint32_t WAKE_MS = 5 * 60 * 1000;
 // Minimum gap between attempts when a fetch keeps failing while awake.
 static const uint32_t TRAINS_RETRY_S = 15, WEATHER_RETRY_S = 60;
@@ -85,11 +84,6 @@ static bool weatherDue() {
          ageSeconds(weatherTriedAt) >= (long)WEATHER_RETRY_S;
 }
 
-static bool quietHours(const Now &n) {
-  if (QUIET_START > QUIET_END) return n.hour >= QUIET_START || n.hour < QUIET_END;
-  return n.hour >= QUIET_START && n.hour < QUIET_END;
-}
-
 static void syncClockIfDue() {
   if (!clockValid() || nowSeconds() - clockSyncedAt >= CLOCK_SYNC_S) {
     if (clockStart()) clockSyncedAt = nowSeconds();
@@ -137,23 +131,14 @@ static void splash(const char *line) {
   panel.show(canvas, true);
 }
 
-// Seconds until the next wake: the next minute boundary in the day, or the end
-// of quiet hours at night.
+// The screen the board rests on while asleep.
+static const int REST_PAGE = PAGE_COUNT - 1;  // moon
+
+// Seconds until the next hourly moon redraw.
 static uint64_t secondsToNextWake() {
   const time_t t = nowSeconds();
-  if (!clockValid()) return 60;
-  const Now n = makeNow(t);
-  if (quietHours(n)) {
-    struct tm lt;
-    localtime_r(&t, &lt);
-    lt.tm_hour = QUIET_END;
-    lt.tm_min = 0;
-    lt.tm_sec = 0;
-    time_t morning = mktime(&lt);
-    if (morning <= t) morning += 24 * 60 * 60;
-    return (uint64_t)(morning - t);
-  }
-  return 60 - (t % 60) + 1;  // a second past the minute, so the clock reads right
+  if (!clockValid()) return 60 * 60;
+  return 60 * 60 - (t % (60 * 60)) + 1;
 }
 
 [[noreturn]] static void sleepNow() {
@@ -173,22 +158,14 @@ static uint64_t secondsToNextWake() {
   esp_deep_sleep_start();
 }
 
-// A timer wake: refresh the trains (or the night card) and sleep again.
+// A timer wake: redraw the moon (the date or phase may have changed) and
+// sleep again. Wi-Fi only comes on when the clock is due a resync.
 static void tick() {
-  const Now now = makeNow(nowSeconds());
-  if (clockValid() && quietHours(now)) {
-    canvas.fillScreen(PAPER);
-    drawOblique(canvas, now, cardForDay(now.localDays), -1);
-    present(true);
-    sleepNow();
+  if (!clockValid() || nowSeconds() - clockSyncedAt >= CLOCK_SYNC_S) {
+    if (wifiConnect(8000)) syncClockIfDue();
+    wifiOff();
   }
-  if (wifiConnect(8000)) {
-    syncClockIfDue();
-    fetchTrains();
-    if (weatherDue()) fetchWeather();
-  }
-  wifiOff();
-  page = 0;
+  page = REST_PAGE;
   showPage();
   sleepNow();
 }
@@ -230,14 +207,9 @@ void loop() {
   if (pressed != Button::None) wakeUntil = millis() + WAKE_MS;
 
   if ((int32_t)(wakeUntil - millis()) <= 0) {
-    // Done browsing: leave the trains (or the night card) up and sleep.
-    const Now now = makeNow(nowSeconds());
-    if (clockValid() && quietHours(now)) {
-      canvas.fillScreen(PAPER);
-      drawOblique(canvas, now, cardForDay(now.localDays), -1);
-      present(true);
-    } else if (page != 0) {
-      page = 0;
+    // Done browsing: come to rest on the moon and sleep.
+    if (page != REST_PAGE) {
+      page = REST_PAGE;
       showPage();
     }
     sleepNow();
