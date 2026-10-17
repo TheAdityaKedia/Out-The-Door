@@ -1,6 +1,13 @@
 #include "cards.h"
 
-// A short starter set. Add the rest of the deck (or your own cards) here.
+// Your own deck, if you have one: create lib/core/cards_local.h (git-ignored)
+// with one quoted card per line, each followed by a comma. Otherwise the
+// short starter set below is used.
+#if __has_include("cards_local.h")
+static const char *const CARDS[] = {
+#include "cards_local.h"
+};
+#else
 static const char *const CARDS[] = {
     "Honor thy error as a hidden intention",
     "Use an old idea",
@@ -17,6 +24,7 @@ static const char *const CARDS[] = {
     "Ask your body",
     "Gardening, not architecture",
 };
+#endif
 
 static long gcd(long a, long b) { return b ? gcd(b, a % b) : a; }
 

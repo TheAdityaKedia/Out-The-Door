@@ -12,3 +12,6 @@ host/deps/
 # Python
 __pycache__/
 *.pyc
+
+# Your own Oblique Strategies deck (see lib/core/cards.cpp)
+lib/core/cards_local.h

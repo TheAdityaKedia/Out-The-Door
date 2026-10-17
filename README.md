@@ -27,7 +27,7 @@ If the picture comes out upside down, set `PANEL_FLIP_180 1`. If it comes out as
 
 ## Changing things
 
-Everything adjustable is in `include/config.h`: the station, which destinations count for each row, the cities, the time per screen and the quiet hours. The Oblique Strategies cards are in `lib/core/cards.cpp`. It ships with a short starter set, so add the rest of the deck if you have it.
+Everything adjustable is in `include/config.h`: the station, which destinations count for each row, the cities, the time per screen and the quiet hours. The Oblique Strategies cards are in `lib/core/cards.cpp`, which ships with a short starter set. To use your own deck, put it in `lib/core/cards_local.h` (one quoted card per line, each followed by a comma). That file is git-ignored, so it stays on your computer.
 
 ## Working on the screens without the board
 
