@@ -1,14 +1,21 @@
 #include "panel.h"
 
 #include <Arduino.h>
+#include <driver/gpio.h>
 
 #include "config.h"
 
 // CrowPanel 2.13" pins (from Elecrow's examples and schematic).
+// Kept in RTC memory so a partial refresh still works after deep sleep.
+RTC_DATA_ATTR static uint8_t previous_[16 * 250];  // what is on screen now
+RTC_DATA_ATTR static bool havePrevious_;
+RTC_DATA_ATTR static bool lutSwapped_;
+
 static const int PIN_SCK = 12, PIN_MOSI = 11, PIN_CS = 14, PIN_DC = 13, PIN_RST = 10,
                  PIN_BUSY = 9, PIN_POWER = 7;
 
-void Panel::begin() {
+void Panel::begin(bool keepPrevious) {
+  gpio_hold_dis((gpio_num_t)PIN_POWER);
   pinMode(PIN_POWER, OUTPUT);
   digitalWrite(PIN_POWER, HIGH);  // the panel's 3.3 V rail
   pinMode(PIN_CS, OUTPUT);
@@ -19,8 +26,18 @@ void Panel::begin() {
   pinMode(PIN_BUSY, INPUT);
   pinMode(PIN_SCK, OUTPUT);
   pinMode(PIN_MOSI, OUTPUT);
-  memset(previous_, 0, BYTES);
+  if (!keepPrevious) {
+    memset(previous_, 0, BYTES);
+    havePrevious_ = false;
+    lutSwapped_ = false;
+  }
   delay(100);
+}
+
+void Panel::powerOff() {
+  sleep();
+  digitalWrite(PIN_POWER, LOW);
+  gpio_hold_en((gpio_num_t)PIN_POWER);
 }
 
 // Canvas (x 0..249 left to right, y 0..121 top to bottom) to panel memory:
@@ -47,6 +64,7 @@ void Panel::show(const GFXcanvas1 &canvas, bool full) {
   else
     showJd79661(full);
   memcpy(previous_, frame_, BYTES);
+  havePrevious_ = true;
 }
 
 void Panel::sleep() {
@@ -170,10 +188,8 @@ void Panel::cursorSsd1680() {
 }
 
 void Panel::showSsd1680(bool full) {
-  if (!awake_) {
-    initSsd1680();
-    full = true;
-  }
+  if (!awake_) initSsd1680();
+  if (!havePrevious_) full = true;
   // 0x24 takes the new picture (1 = white). 0x26 holds the one already on
   // screen, which a partial refresh compares against; a full refresh gets
   // the new picture in both.
@@ -257,6 +273,7 @@ void Panel::lutJd79661(bool full) {
 }
 
 void Panel::showJd79661(bool full) {
+  if (!havePrevious_) full = true;
   initJd79661();
   command(0x50);  // VCOM and data interval: picture data is 1 = black
   data(0xD7);

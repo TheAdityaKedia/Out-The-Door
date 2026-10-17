@@ -45,7 +45,7 @@ static const uint32_t TRAINS_GIVE_UP = 10 * 60;
 
 // Quiet hours (local time, 24 h clock): the screen holds the card of the day,
 // Wi-Fi is switched off and nothing is fetched.
-static const int QUIET_START = 23;
+static const int QUIET_START = 22;
 static const int QUIET_END = 6;
 
 // A full refresh (with the e-ink flash) every this many screen changes.

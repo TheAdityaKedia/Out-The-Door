@@ -6,12 +6,15 @@
 class Panel {
  public:
   explicit Panel(int revision) : rev_(revision) {}
-  void begin();
+  // keepPrevious: the picture from before deep sleep is still on screen.
+  void begin(bool keepPrevious);
   // Sends the canvas to the screen. A full refresh flashes but clears any
   // ghosting; a partial one is quick and quiet.
   void show(const GFXcanvas1 &canvas, bool full);
   // Puts the controller into deep sleep; the next show() wakes it.
   void sleep();
+  // Cuts the panel's power for deep sleep; the picture stays on the e-paper.
+  void powerOff();
 
  private:
   static const int BYTES = 16 * 250;  // 128 (122 used) x 250, 1 bit per pixel
@@ -34,7 +37,5 @@ class Panel {
 
   int rev_;
   bool awake_ = false;
-  bool lutSwapped_ = false;
-  uint8_t frame_[BYTES];     // picture being sent, 1 = black
-  uint8_t previous_[BYTES];  // what is on screen now, for partial refreshes
+  uint8_t frame_[BYTES];  // picture being sent, 1 = black
 };

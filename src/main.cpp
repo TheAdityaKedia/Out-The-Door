@@ -1,6 +1,14 @@
-// out-the-door: rotates BART departures, weather, an Oblique Strategies card
-// and the moon phase on the CrowPanel's 2.13" e-paper screen.
+// out-the-door: BART departures, weather, an Oblique Strategies card and the
+// moon phase on the CrowPanel's 2.13" e-paper screen, run from a battery.
+//
+// The board spends almost all its time in deep sleep. Once a minute it wakes,
+// fetches train times, redraws the trains screen and goes back to sleep. A
+// button wakes it for a couple of minutes of browsing, with screens cycling
+// and the wheel flipping between them. In quiet hours it shows the card of
+// the day and sleeps until morning.
 #include <Arduino.h>
+#include <driver/rtc_io.h>
+#include <esp_sleep.h>
 #include <time.h>
 
 #include "bart.h"
@@ -14,32 +22,35 @@
 #include "secrets.h"
 #include "weather.h"
 
-// After a button press the screen stays awake this long, even in quiet hours.
+// After a button press the board stays awake this long, even in quiet hours.
 static const uint32_t WAKE_MS = 2 * 60 * 1000;
-// Minimum gap between attempts when a fetch keeps failing.
-static const uint32_t TRAINS_RETRY_MS = 15 * 1000, WEATHER_RETRY_MS = 60 * 1000;
+// Minimum gap between attempts when a fetch keeps failing while awake.
+static const uint32_t TRAINS_RETRY_S = 15, WEATHER_RETRY_S = 60;
+// How often to resync the clock over NTP.
+static const time_t CLOCK_SYNC_S = 6 * 60 * 60;
 
 static GFXcanvas1 canvas(SCREEN_W, SCREEN_H);
 static Panel panel(PANEL_REVISION);
 
+// Kept in RTC memory across deep sleep. Only trusted after a deep-sleep wake.
+RTC_DATA_ATTR static TrainRow trains[3];
+RTC_DATA_ATTR static bool haveTrains;
+RTC_DATA_ATTR static time_t trainsAt, trainsTriedAt;
+RTC_DATA_ATTR static CityWeather weather[2];
+RTC_DATA_ATTR static bool haveWeather;
+RTC_DATA_ATTR static time_t weatherAt, weatherTriedAt;
+RTC_DATA_ATTR static time_t clockSyncedAt;
+RTC_DATA_ATTR static int changes;
+
 static int page = 0;
-static int changes = 0;
 static uint32_t shownAt = 0;
 static uint32_t wakeUntil = 0;
-static long quietDay = -1;  // local day whose quiet-hours card is on screen
 
-static TrainRow trains[3];
-static bool haveTrains = false;
-static uint32_t trainsAt = 0, trainsTriedAt = 0;
-
-static CityWeather weather[2];
-static bool haveWeather = false;
-static uint32_t weatherAt = 0, weatherTriedAt = 0;
-
-static uint32_t ageSeconds(uint32_t at) { return (millis() - at) / 1000; }
+static time_t nowSeconds() { return time(nullptr); }
+static long ageSeconds(time_t at) { return (long)(nowSeconds() - at); }
 
 static void fetchTrains() {
-  trainsTriedAt = millis();
+  trainsTriedAt = nowSeconds();
   char url[160];
   bartUrl(STATION, BART_KEY, url, sizeof url);
   String body;
@@ -47,12 +58,12 @@ static void fetchTrains() {
   if (httpGet(url, body) && parseBart(body.c_str(), TRAIN_ROWS, 3, fresh)) {
     memcpy(trains, fresh, sizeof trains);
     haveTrains = true;
-    trainsAt = millis();
+    trainsAt = nowSeconds();
   }
 }
 
 static void fetchWeather() {
-  weatherTriedAt = millis();
+  weatherTriedAt = nowSeconds();
   char url[400];
   weatherUrl(CITIES, 2, url, sizeof url);
   String body;
@@ -60,18 +71,18 @@ static void fetchWeather() {
   if (httpGet(url, body) && parseWeather(body.c_str(), fresh, 2)) {
     memcpy(weather, fresh, sizeof weather);
     haveWeather = true;
-    weatherAt = millis();
+    weatherAt = nowSeconds();
   }
 }
 
 static bool trainsDue() {
-  return (!haveTrains || ageSeconds(trainsAt) >= TRAINS_MAX_AGE) &&
-         millis() - trainsTriedAt >= TRAINS_RETRY_MS;
+  return (!haveTrains || ageSeconds(trainsAt) >= (long)TRAINS_MAX_AGE) &&
+         ageSeconds(trainsTriedAt) >= (long)TRAINS_RETRY_S;
 }
 
 static bool weatherDue() {
-  return (!haveWeather || ageSeconds(weatherAt) >= WEATHER_MAX_AGE) &&
-         millis() - weatherTriedAt >= WEATHER_RETRY_MS;
+  return (!haveWeather || ageSeconds(weatherAt) >= (long)WEATHER_MAX_AGE) &&
+         ageSeconds(weatherTriedAt) >= (long)WEATHER_RETRY_S;
 }
 
 static bool quietHours(const Now &n) {
@@ -79,13 +90,19 @@ static bool quietHours(const Now &n) {
   return n.hour >= QUIET_START && n.hour < QUIET_END;
 }
 
-static void showPage(bool full = false) {
-  const Now now = makeNow(time(nullptr));
+static void syncClockIfDue() {
+  if (!clockValid() || nowSeconds() - clockSyncedAt >= CLOCK_SYNC_S) {
+    if (clockStart()) clockSyncedAt = nowSeconds();
+  }
+}
+
+static void draw(int which) {
+  const Now now = makeNow(nowSeconds());
   canvas.fillScreen(PAPER);
-  switch (page) {
+  switch (which) {
     case 0: {
       TrainRow counted[3];
-      const long age = haveTrains ? (long)ageSeconds(trainsAt) : 0;
+      const long age = haveTrains ? ageSeconds(trainsAt) : 0;
       for (int i = 0; i < 3; i++) counted[i] = countDown(trains[i], age);
       const TrainsView view{STATION_LABEL, TRAIN_ROWS, haveTrains ? counted : nullptr, age,
                             (long)TRAINS_STALE, (long)TRAINS_GIVE_UP};
@@ -102,9 +119,16 @@ static void showPage(bool full = false) {
       drawMoon(canvas, now);
       break;
   }
-  panel.show(canvas, full || changes % FULL_REFRESH_EVERY == 0);
-  changes++;
+}
+
+static void present(bool full = false) {
+  panel.show(canvas, full || ++changes % FULL_REFRESH_EVERY == 0);
   shownAt = millis();
+}
+
+static void showPage(bool full = false) {
+  draw(page);
+  present(full);
 }
 
 static void splash(const char *line) {
@@ -113,45 +137,114 @@ static void splash(const char *line) {
   panel.show(canvas, true);
 }
 
+// Seconds until the next wake: the next minute boundary in the day, or the end
+// of quiet hours at night.
+static uint64_t secondsToNextWake() {
+  const time_t t = nowSeconds();
+  if (!clockValid()) return 60;
+  const Now n = makeNow(t);
+  if (quietHours(n)) {
+    struct tm lt;
+    localtime_r(&t, &lt);
+    lt.tm_hour = QUIET_END;
+    lt.tm_min = 0;
+    lt.tm_sec = 0;
+    time_t morning = mktime(&lt);
+    if (morning <= t) morning += 24 * 60 * 60;
+    return (uint64_t)(morning - t);
+  }
+  return 60 - (t % 60) + 1;  // a second past the minute, so the clock reads right
+}
+
+[[noreturn]] static void sleepNow() {
+  panel.powerOff();
+  wifiOff();
+  const uint64_t seconds = secondsToNextWake();
+  Serial.printf("sleep: %llu s\n", seconds);
+  esp_sleep_enable_timer_wakeup(seconds * 1000000ULL);
+  uint64_t mask = 0;
+  for (int pin : BUTTON_PINS) {
+    if (digitalRead(pin) == LOW) continue;  // held now; waking on it would loop
+    rtc_gpio_pullup_en((gpio_num_t)pin);
+    rtc_gpio_pulldown_dis((gpio_num_t)pin);
+    mask |= 1ULL << pin;
+  }
+  if (mask) {
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+    esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW);
+  }
+  Serial.flush();
+  esp_deep_sleep_start();
+}
+
+// A timer wake: refresh the trains (or the night card) and sleep again.
+static void tick() {
+  const Now now = makeNow(nowSeconds());
+  if (clockValid() && quietHours(now)) {
+    canvas.fillScreen(PAPER);
+    drawOblique(canvas, now, cardForDay(now.localDays), -1);
+    present(true);
+    sleepNow();
+  }
+  if (wifiConnect(8000)) {
+    syncClockIfDue();
+    fetchTrains();
+    if (weatherDue()) fetchWeather();
+  }
+  wifiOff();
+  page = 0;
+  showPage();
+  sleepNow();
+}
+
 void setup() {
   Serial.begin(115200);
+  setenv("TZ", TIME_ZONE, 1);
+  tzset();
+  const esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
+  const bool fromSleep = cause == ESP_SLEEP_WAKEUP_TIMER || cause == ESP_SLEEP_WAKEUP_EXT1;
+  for (int pin : BUTTON_PINS) rtc_gpio_deinit((gpio_num_t)pin);
   buttonsBegin();
-  panel.begin();
-  splash("Connecting to Wi-Fi...");
-  if (!wifiConnect() || !clockStart()) splash("No Wi-Fi yet, still trying");
-  fetchTrains();
-  fetchWeather();
+  panel.begin(fromSleep);
+
+  Serial.printf("wake: cause %d\n", (int)cause);
+  if (cause == ESP_SLEEP_WAKEUP_TIMER) tick();
+
+  if (!fromSleep) {
+    // Power on or reset: start from nothing.
+    haveTrains = haveWeather = false;
+    trainsAt = trainsTriedAt = weatherAt = weatherTriedAt = clockSyncedAt = 0;
+    changes = 0;
+    splash("Connecting to Wi-Fi...");
+    if (!wifiConnect()) splash("No Wi-Fi yet, still trying");
+  }
+  // Power on, or woken by a button: stay up and browse for a while.
+  if (wifiConnect()) {
+    syncClockIfDue();
+    if (trainsDue()) fetchTrains();
+    if (weatherDue()) fetchWeather();
+  }
+  wakeUntil = millis() + WAKE_MS;
   page = 0;
-  showPage(true);
+  showPage(!fromSleep);
 }
 
 void loop() {
   const Button pressed = buttonPressed();
   if (pressed != Button::None) wakeUntil = millis() + WAKE_MS;
-  const bool awake = (int32_t)(wakeUntil - millis()) > 0;
-  const Now now = makeNow(time(nullptr));
 
-  // Quiet hours: hold the card of the day with Wi-Fi off until morning or a press.
-  if (clockValid() && quietHours(now) && !awake) {
-    if (quietDay != now.localDays) {
+  if ((int32_t)(wakeUntil - millis()) <= 0) {
+    // Done browsing: leave the trains (or the night card) up and sleep.
+    const Now now = makeNow(nowSeconds());
+    if (clockValid() && quietHours(now)) {
       canvas.fillScreen(PAPER);
       drawOblique(canvas, now, cardForDay(now.localDays), -1);
-      panel.show(canvas, true);
-      panel.sleep();
-      wifiOff();
-      quietDay = now.localDays;
+      present(true);
+    } else if (page != 0) {
+      page = 0;
+      showPage();
     }
-    delay(50);
-    return;
-  }
-  if (quietDay != -1) {  // morning, or woken by a button
-    quietDay = -1;
-    wifiConnect();
-    fetchTrains();
-    fetchWeather();
-    page = 0;
-    showPage(true);
-    return;
+    sleepNow();
   }
 
   // Scroll wheel flips screens; pressing it (or Menu) jumps to fresh trains.
