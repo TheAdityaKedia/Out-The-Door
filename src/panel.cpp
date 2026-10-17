@@ -1,14 +1,12 @@
 #include "panel.h"
 
 #include <Arduino.h>
-#include <SPI.h>
 
 #include "config.h"
 
 // CrowPanel 2.13" pins (from Elecrow's examples and schematic).
 static const int PIN_SCK = 12, PIN_MOSI = 11, PIN_CS = 14, PIN_DC = 13, PIN_RST = 10,
                  PIN_BUSY = 9, PIN_POWER = 7;
-static const SPISettings SPI_SETTINGS(4000000, MSBFIRST, SPI_MODE0);
 
 void Panel::begin() {
   pinMode(PIN_POWER, OUTPUT);
@@ -19,9 +17,10 @@ void Panel::begin() {
   pinMode(PIN_RST, OUTPUT);
   digitalWrite(PIN_RST, HIGH);
   pinMode(PIN_BUSY, INPUT);
-  SPI.begin(PIN_SCK, -1, PIN_MOSI, PIN_CS);
+  pinMode(PIN_SCK, OUTPUT);
+  pinMode(PIN_MOSI, OUTPUT);
   memset(previous_, 0, BYTES);
-  delay(50);
+  delay(100);
 }
 
 // Canvas (x 0..249 left to right, y 0..121 top to bottom) to panel memory:
@@ -88,34 +87,39 @@ bool Panel::waitIdle(uint32_t timeoutMs) {
   return true;
 }
 
+// Bit-banged SPI, as in Elecrow's examples: the hardware SPI peripheral did
+// not reach the panel on this board.
+static inline void writeByte(uint8_t b) {
+  for (int i = 0; i < 8; i++) {
+    digitalWrite(PIN_SCK, LOW);
+    digitalWrite(PIN_MOSI, (b & 0x80) ? HIGH : LOW);
+    digitalWrite(PIN_SCK, HIGH);
+    b <<= 1;
+  }
+}
+
 void Panel::command(uint8_t c) {
-  SPI.beginTransaction(SPI_SETTINGS);
   digitalWrite(PIN_DC, LOW);
   digitalWrite(PIN_CS, LOW);
-  SPI.transfer(c);
+  writeByte(c);
   digitalWrite(PIN_CS, HIGH);
   digitalWrite(PIN_DC, HIGH);
-  SPI.endTransaction();
 }
 
 void Panel::data(uint8_t d) { data(&d, 1); }
 
 void Panel::data(const uint8_t *d, size_t n) {
-  SPI.beginTransaction(SPI_SETTINGS);
   digitalWrite(PIN_DC, HIGH);
   digitalWrite(PIN_CS, LOW);
-  for (size_t i = 0; i < n; i++) SPI.transfer(d[i]);
+  for (size_t i = 0; i < n; i++) writeByte(d[i]);
   digitalWrite(PIN_CS, HIGH);
-  SPI.endTransaction();
 }
 
 void Panel::dataFill(uint8_t value, size_t n) {
-  SPI.beginTransaction(SPI_SETTINGS);
   digitalWrite(PIN_DC, HIGH);
   digitalWrite(PIN_CS, LOW);
-  for (size_t i = 0; i < n; i++) SPI.transfer(value);
+  for (size_t i = 0; i < n; i++) writeByte(value);
   digitalWrite(PIN_CS, HIGH);
-  SPI.endTransaction();
 }
 
 // Sends a frame (1 = black), flipping bits when the controller wants 1 = white.

@@ -2,9 +2,10 @@
 #pragma once
 #include "types.h"
 
-// Board revision printed on the back of the CrowPanel: 10 for V1.0, 12 for V1.2.
-// V1.0 uses an SSD1680 display controller, V1.2 a JD79661.
-#define PANEL_REVISION 12
+// Display controller: 10 for the SSD1680, 12 for the JD79661. The revision
+// printed on the back (V1.0 / V1.2) does not always match: a board labelled
+// V1.2 turned out to have the SSD1680. If the screen never changes, try the other.
+#define PANEL_REVISION 10
 
 // Turn the picture upside down (if the board is mounted with USB on the other side).
 #define PANEL_FLIP_180 0

@@ -15,7 +15,7 @@ From 11 pm to 6 am it stops cycling, turns Wi-Fi off and just shows the card of 
 
 ## Setup
 
-1. **Check the board revision.** The back of the board says V1.0 or V1.2. Set `PANEL_REVISION` in `include/config.h` to `10` or `12`. V1.0 has an SSD1680 display controller and V1.2 a JD79661, and they are driven differently.
+1. **Check the board revision.** The back of the board says V1.0 or V1.2. Set `PANEL_REVISION` in `include/config.h` to `10` or `12`. V1.0 has an SSD1680 display controller and V1.2 a JD79661, and they are driven differently. The label isn't always right: if the screen never changes after flashing, switch to the other value.
 2. **Install PlatformIO.** Either the VS Code extension, or `pip install platformio` for the command line.
 3. **Add your Wi-Fi.** Copy `src/secrets.example.h` to `src/secrets.h` and fill it in. You can use BART's shared key or [register your own](https://api.bart.gov/api/register.aspx).
 4. **Flash it.** Plug the board in over USB-C and run `pio run -t upload`. If the upload doesn't start, hold BOOT, tap RESET, then release BOOT.
