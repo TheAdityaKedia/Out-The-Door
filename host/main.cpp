@@ -70,17 +70,18 @@ static void checkClock() {
 }
 
 static void checkBart(const std::string &dir) {
-  TrainRow rows[3];
-  CHECK(parseBart(readFile(dir + "/bart_19th.json").c_str(), TRAIN_ROWS, 3, rows));
+  TrainRow rows[TRAIN_ROW_COUNT];
+  CHECK(parseBart(readFile(dir + "/bart_19th.json").c_str(), TRAIN_ROWS, TRAIN_ROW_COUNT, rows));
   CHECK(rows[0].count == 2 && rows[0].minutes[0] == 9 && rows[0].minutes[1] == 14);  // "Leaving" dropped
-  CHECK(rows[1].count == 3 && rows[1].minutes[0] == 5 && rows[1].minutes[1] == 10 &&
-        rows[1].minutes[2] == 20);  // SFO and Millbrae merged
-  CHECK(rows[2].count == 2 && rows[2].minutes[0] == 7 && rows[2].minutes[1] == 22);
-  const TrainRow later = countDown(rows[1], 6 * 60);
+  CHECK(rows[1].count == 0);                                                            // no Antioch trains
+  CHECK(rows[2].count == 4 && rows[2].minutes[0] == 3 && rows[2].minutes[1] == 5 &&
+        rows[2].minutes[2] == 10 && rows[2].minutes[3] == 20);  // Daly City, SFO and Millbrae merged
+  CHECK(rows[3].count == 2 && rows[3].minutes[0] == 7 && rows[3].minutes[1] == 22);
+  const TrainRow later = countDown(rows[2], 6 * 60);
   CHECK(later.count == 2 && later.minutes[0] == 4 && later.minutes[1] == 14);
-  CHECK(parseBart("{\"root\":{\"station\":[{\"abbr\":\"19TH\"}]}}", TRAIN_ROWS, 3, rows));
-  CHECK(rows[0].count == 0 && rows[1].count == 0 && rows[2].count == 0);
-  CHECK(!parseBart("not json", TRAIN_ROWS, 3, rows));
+  CHECK(parseBart("{\"root\":{\"station\":[{\"abbr\":\"19TH\"}]}}", TRAIN_ROWS, TRAIN_ROW_COUNT, rows));
+  CHECK(rows[0].count == 0 && rows[1].count == 0 && rows[2].count == 0 && rows[3].count == 0);
+  CHECK(!parseBart("not json", TRAIN_ROWS, TRAIN_ROW_COUNT, rows));
 }
 
 static void checkWeather(const std::string &dir) {
@@ -136,16 +137,16 @@ int main(int argc, char **argv) {
   checkMoon();
 
   const Now now = makeNow(utc(2026, 10, 14, 14, 42));  // 7:42 am PDT
-  TrainRow rows[3];
-  parseBart(readFile(fixtures + "/bart_19th.json").c_str(), TRAIN_ROWS, 3, rows);
+  TrainRow rows[TRAIN_ROW_COUNT];
+  parseBart(readFile(fixtures + "/bart_19th.json").c_str(), TRAIN_ROWS, TRAIN_ROW_COUNT, rows);
   CityWeather cities[2];
   parseWeather(readFile(fixtures + "/weather.json").c_str(), cities, 2);
   const char *card = cardForDay(now.localDays);
 
   auto trains = [&](long age, bool have) {
-    static TrainRow counted[3];
-    for (int i = 0; i < 3; i++) counted[i] = countDown(rows[i], age);
-    return TrainsView{STATION_LABEL, TRAIN_ROWS, have ? counted : nullptr, age,
+    static TrainRow counted[TRAIN_ROW_COUNT];
+    for (int i = 0; i < TRAIN_ROW_COUNT; i++) counted[i] = countDown(rows[i], age);
+    return TrainsView{STATION_LABEL, TRAIN_ROWS, TRAIN_ROW_COUNT, have ? counted : nullptr, age,
                       (long)TRAINS_STALE, (long)TRAINS_GIVE_UP};
   };
   preview(out, "1_trains", [&](Adafruit_GFX &g) { drawTrains(g, now, trains(0, true)); });

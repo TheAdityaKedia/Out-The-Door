@@ -18,7 +18,13 @@ static const char *const CARDS[] = {
     "Gardening, not architecture",
 };
 
+static long gcd(long a, long b) { return b ? gcd(b, a % b) : a; }
+
 const char *cardForDay(long localDays) {
   const long n = sizeof(CARDS) / sizeof(CARDS[0]);
-  return CARDS[((localDays * 37) % n + n) % n];
+  // Step through the deck by a stride that shares no factor with its size, so
+  // every card comes up once per pass whatever the deck size.
+  long step = 37;
+  while (gcd(step, n) != 1) step++;
+  return CARDS[((localDays % n) * step % n + n) % n];
 }

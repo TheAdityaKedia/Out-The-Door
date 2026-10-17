@@ -18,10 +18,13 @@
 static const char *const STATION = "19TH";
 static const char *const STATION_LABEL = "19th St BART";
 
-// One row per direction: the label on screen and the destination codes that count.
-static const TrainRowConfig TRAIN_ROWS[3] = {
+// One row per direction: the label on screen and the destination codes that
+// count. Up to four rows fit on the screen.
+static const int TRAIN_ROW_COUNT = 4;
+static const TrainRowConfig TRAIN_ROWS[TRAIN_ROW_COUNT] = {
     {"Richmond", {"RICH"}},
-    {"SFO / Millbrae", {"SFIA", "MLBR"}},
+    {"Antioch", {"ANTC", "PITT"}},
+    {"San Francisco", {"SFIA", "MLBR", "DALY"}},
     {"Berryessa", {"BERY"}},
 };
 

@@ -33,7 +33,7 @@ static GFXcanvas1 canvas(SCREEN_W, SCREEN_H);
 static Panel panel(PANEL_REVISION);
 
 // Kept in RTC memory across deep sleep. Only trusted after a deep-sleep wake.
-RTC_DATA_ATTR static TrainRow trains[3];
+RTC_DATA_ATTR static TrainRow trains[TRAIN_ROW_COUNT];
 RTC_DATA_ATTR static bool haveTrains;
 RTC_DATA_ATTR static time_t trainsAt, trainsTriedAt;
 RTC_DATA_ATTR static CityWeather weather[2];
@@ -54,8 +54,8 @@ static void fetchTrains() {
   char url[160];
   bartUrl(STATION, BART_KEY, url, sizeof url);
   String body;
-  TrainRow fresh[3];
-  if (httpGet(url, body) && parseBart(body.c_str(), TRAIN_ROWS, 3, fresh)) {
+  TrainRow fresh[TRAIN_ROW_COUNT];
+  if (httpGet(url, body) && parseBart(body.c_str(), TRAIN_ROWS, TRAIN_ROW_COUNT, fresh)) {
     memcpy(trains, fresh, sizeof trains);
     haveTrains = true;
     trainsAt = nowSeconds();
@@ -101,10 +101,10 @@ static void draw(int which) {
   canvas.fillScreen(PAPER);
   switch (which) {
     case 0: {
-      TrainRow counted[3];
+      TrainRow counted[TRAIN_ROW_COUNT];
       const long age = haveTrains ? ageSeconds(trainsAt) : 0;
-      for (int i = 0; i < 3; i++) counted[i] = countDown(trains[i], age);
-      const TrainsView view{STATION_LABEL, TRAIN_ROWS, haveTrains ? counted : nullptr, age,
+      for (int i = 0; i < TRAIN_ROW_COUNT; i++) counted[i] = countDown(trains[i], age);
+      const TrainsView view{STATION_LABEL, TRAIN_ROWS, TRAIN_ROW_COUNT, haveTrains ? counted : nullptr, age,
                             (long)TRAINS_STALE, (long)TRAINS_GIVE_UP};
       drawTrains(canvas, now, view);
       break;

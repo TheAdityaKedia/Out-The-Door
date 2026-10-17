@@ -12,6 +12,7 @@ static const int PAGE_COUNT = 4;
 struct TrainsView {
   const char *stationLabel;
   const TrainRowConfig *rows;
+  int rowCount;             // 3 or 4
   const TrainRow *minutes;  // already counted down; null if never fetched
   long ageSeconds;          // since the last good fetch
   long staleAfter, giveUpAfter;

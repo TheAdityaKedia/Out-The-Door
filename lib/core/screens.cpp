@@ -102,7 +102,12 @@ static void icon(Adafruit_GFX &g, Icon kind, int cx, int cy) {
 
 void drawTrains(Adafruit_GFX &g, const Now &now, const TrainsView &v) {
   char buf[48];
-  formatTime(now, buf, sizeof buf);
+  const bool stale = v.minutes && v.ageSeconds > v.staleAfter && v.ageSeconds <= v.giveUpAfter;
+  const bool compact = v.rowCount > 3;
+  if (stale && compact)
+    snprintf(buf, sizeof buf, "%ld min ago", v.ageSeconds / 60);
+  else
+    formatTime(now, buf, sizeof buf);
   header(g, v.stationLabel, buf);
   if (!v.minutes || v.ageSeconds > v.giveUpAfter) {
     drawTextCenter(g, BOLD14, SCREEN_W / 2, 44, "No train times right now", INK);
@@ -110,26 +115,29 @@ void drawTrains(Adafruit_GFX &g, const Now &now, const TrainsView &v) {
     pageDots(g, 0);
     return;
   }
-  const int top = 18, rowH = 32;
-  for (int i = 0; i < 3; i++) {
+  // Three roomy rows, or four compact ones.
+  const int top = compact ? 17 : 18, rowH = compact ? 24 : 32;
+  const Font &labelFont = BOLD14, &firstFont = compact ? BOLD18 : BOLD26, &laterFont = compact ? BOLD14 : BOLD16;
+  const int labelY = compact ? 5 : 8, firstY = compact ? 3 : 1, laterY = compact ? 5 : 10;
+  for (int i = 0; i < v.rowCount; i++) {
     const int y = top + i * rowH;
     const TrainRow &row = v.minutes[i];
-    drawText(g, BOLD14, 4, y + 8, v.rows[i].label, INK);
+    drawText(g, labelFont, 4, y + labelY, v.rows[i].label, INK);
     int right = SCREEN_W - 4;
     if (row.count >= 2) {
       snprintf(buf, sizeof buf, "%d", row.minutes[1]);
-      drawTextRight(g, BOLD16, right, y + 10, buf, INK);
-      right -= textWidth(BOLD16, buf) + 6;
+      drawTextRight(g, laterFont, right, y + laterY, buf, INK);
+      right -= textWidth(laterFont, buf) + 6;
     }
     if (row.count >= 1) {
       snprintf(buf, sizeof buf, "%d", row.minutes[0]);
-      drawTextRight(g, BOLD26, right, y + 1, buf, INK);
+      drawTextRight(g, firstFont, right, y + firstY, buf, INK);
     } else {
-      drawTextRight(g, BOLD16, right, y + 10, "--", INK);
+      drawTextRight(g, laterFont, right, y + laterY, "--", INK);
     }
-    if (i < 2) dottedRule(g, 4, SCREEN_W - 4, y + rowH - 1);
+    if (i < v.rowCount - 1) dottedRule(g, 4, SCREEN_W - 4, y + rowH - 1);
   }
-  if (v.ageSeconds > v.staleAfter) {
+  if (stale && !compact) {
     snprintf(buf, sizeof buf, "updated %ld min ago", v.ageSeconds / 60);
     drawTextCenter(g, BOLD10, SCREEN_W / 2, SCREEN_H - 12, buf, INK);
   } else {

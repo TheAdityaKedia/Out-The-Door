@@ -2,7 +2,7 @@
 
 A small e-ink display for the wall by the front door, running on an Elecrow CrowPanel ESP32-S3 2.13" e-paper board, powered by a small LiPo. It has four screens:
 
-1. **BART**: the next two trains from 19th St toward Richmond, SFO / Millbrae and Berryessa
+1. **BART**: the next two trains from 19th St toward Richmond, Antioch (and Pittsburg / Bay Point), San Francisco (Daly City, SFO and Millbrae) and Berryessa
 2. **Weather**: Oakland and San Francisco right now, with today's high and low
 3. **Oblique Strategies**: a card of the day
 4. **Moon**: tonight's phase and the next full moon
