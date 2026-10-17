@@ -32,7 +32,7 @@ static const CityConfig CITIES[2] = {
 };
 
 // Seconds each screen stays up.
-static const uint32_t SCREEN_SECONDS = 20;
+static const uint32_t SCREEN_SECONDS = 15;
 
 // How old data may get before it is fetched again (seconds).
 static const uint32_t TRAINS_MAX_AGE = 30;

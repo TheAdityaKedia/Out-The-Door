@@ -1,6 +1,6 @@
 # out-the-door
 
-A small e-ink display for the wall by the front door, running on an Elecrow CrowPanel ESP32-S3 2.13" e-paper board. It cycles through four screens, 20 seconds each:
+A small e-ink display for the wall by the front door, running on an Elecrow CrowPanel ESP32-S3 2.13" e-paper board. It cycles through four screens, 15 seconds each:
 
 1. **BART**: the next two trains from 19th St toward Richmond, SFO / Millbrae and Berryessa
 2. **Weather**: Oakland and San Francisco right now, with today's high and low
