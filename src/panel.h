@@ -11,6 +11,10 @@ class Panel {
   // Sends the canvas to the screen. A full refresh flashes but clears any
   // ghosting; a partial one is quick and quiet.
   void show(const GFXcanvas1 &canvas, bool full);
+  // Shows a 4-grey picture with a full refresh (SSD1680 only). levels holds
+  // one byte per canvas pixel, row by row: 0 black, 1 dark grey, 2 light
+  // grey, 3 white. The next show() returns to black and white.
+  void showGrey4(const uint8_t *levels);
   // Puts the controller into deep sleep; the next show() wakes it.
   void sleep();
   // Cuts the panel's power for deep sleep; the picture stays on the e-paper.
@@ -29,6 +33,7 @@ class Panel {
   void sendFrame(const uint8_t *frame, bool oneIsWhite);
 
   void showSsd1680(bool full);
+  void sendPlane(const uint8_t *levels, int bit);
   void initSsd1680();
   void cursorSsd1680();
   void showJd79661(bool full);
