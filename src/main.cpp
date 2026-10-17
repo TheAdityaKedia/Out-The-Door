@@ -19,8 +19,9 @@
 #include "panel.h"
 #include "screens.h"
 #include "secrets.h"
-#include "text.h"
 #include "weather.h"
+
+#include "../art/red_fuji.h"
 
 // After a wake or a button press the board stays awake this long.
 static const uint32_t WAKE_MS = 5 * 60 * 1000;
@@ -163,36 +164,11 @@ static uint64_t secondsToNextWake() {
   esp_deep_sleep_start();
 }
 
-// The screensaver, drawn in four greys. For now a test pattern: four bands
-// (black, dark grey, light grey, white) and a dithered gradient, to check the
-// greys on this panel before the art goes in.
+// The screensaver: Hokusai's Red Fuji in four greys.
 static uint8_t greys[SCREEN_W * SCREEN_H];
 
 static void showScreensaver() {
-  for (int y = 0; y < SCREEN_H; y++) {
-    for (int x = 0; x < SCREEN_W; x++) {
-      uint8_t level;
-      if (y < 80) {
-        level = x * 4 / SCREEN_W;
-      } else {
-        // 4x4 ordered dither of a left-to-right gradient onto the four levels.
-        static const uint8_t BAYER[4][4] = {{0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5}};
-        const int v = x * 3 * 16 / (SCREEN_W - 1);  // 0..48
-        level = (uint8_t)(v / 16 + ((v % 16) > BAYER[y & 3][x & 3] ? 1 : 0));
-        if (level > 3) level = 3;
-      }
-      greys[y * SCREEN_W + x] = level;
-    }
-  }
-  // Band numbers, in the opposite shade so they show on every band.
-  canvas.fillScreen(PAPER);
-  for (int i = 0; i < 4; i++) {
-    char label[2] = {(char)('0' + i), 0};
-    drawTextCenter(canvas, BOLD26, SCREEN_W * (2 * i + 1) / 8, 24, label, INK);
-  }
-  for (int y = 0; y < SCREEN_H; y++)
-    for (int x = 0; x < SCREEN_W; x++)
-      if (canvas.getPixel(x, y)) greys[y * SCREEN_W + x] = greys[y * SCREEN_W + x] < 2 ? 3 : 0;
+  unpackRedFuji(greys);
   panel.showGrey4(greys);
   restingOnArt = true;
 }
