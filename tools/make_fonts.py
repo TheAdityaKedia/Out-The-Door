@@ -78,6 +78,10 @@ def build(name, path, size):
     for code in range(FIRST, LAST + 1):
         if code in WANTED:
             adv, w, h, xo, yo, data = render(font, chr(code), ascent)
+            if xo < 0 and "Bold" not in name:
+                # At these sizes a thin glyph that leans left (V, J) touches the
+                # letter before it, so UV reads as one blob; give it a clear column.
+                adv, xo = adv + 1 - xo, 1
         else:
             adv, w, h, xo, yo, data = 0, 0, 0, 0, 0, b""
         glyphs.append((len(bitmap), w, h, adv, xo, yo, code))

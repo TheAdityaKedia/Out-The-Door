@@ -136,15 +136,12 @@ static void smallIcon(Adafruit_GFX &g, Icon kind, int cx, int cy) {
   }
 }
 
-// A rounded pill with centred text: solid black for a warning, else outlined.
-static void pill(Adafruit_GFX &g, int x0, int x1, int y0, int y1, const char *text, bool warn) {
-  const int w = x1 - x0, h = y1 - y0, r = 7;
-  if (warn) {
-    g.fillRoundRect(x0, y0, w, h, r, INK);
-  } else {
-    g.drawRoundRect(x0, y0, w, h, r, INK);
-  }
-  drawTextCenter(g, SANS10, (x0 + x1) / 2, y0 + 1, text, warn ? PAPER : INK);
+// Plain small text; a warning is shown white on a black tag.
+static void note(Adafruit_GFX &g, int x, int y, bool alignRight, const char *text, bool warn) {
+  const int w = textWidth(SANS10, text);
+  if (alignRight) x -= w;
+  if (warn) g.fillRoundRect(x - 3, y - 1, w + 6, SANS10.height + 1, 3, INK);
+  drawText(g, SANS10, x, y, text, warn ? PAPER : INK);
 }
 
 void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, const CityWeather *cities) {
@@ -164,8 +161,8 @@ void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, cons
     drawText(g, BOLD30, 4, row + 13, buf, INK);
     smallIcon(g, c.icon, 74, row + 27);
 
-    // Where today's temperature sits between the low and the high.
-    const int bx0 = 120, bx1 = CONTENT_R - 2, by0 = row + 4, by1 = row + 11;
+    // Everything on the right hangs off the day bar's two ends.
+    const int bx0 = 112, bx1 = CONTENT_R - 2, by0 = row + 4, by1 = row + 11;
     g.fillRect(bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, PAPER);
     g.drawRect(bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, INK);
     int mx = c.high > c.low ? bx0 + (c.temp - c.low) * (bx1 - bx0) / (c.high - c.low) : (bx0 + bx1) / 2;
@@ -175,19 +172,18 @@ void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, cons
     g.fillRect(mx - 1, by0, 2, by1 - by0 + 1, INK);
     snprintf(buf, sizeof buf, "L %d\xB0", c.low);
     drawText(g, SANS10, bx0, row + 13, buf, INK);
-    drawTextCenter(g, SANS10, (bx0 + bx1) / 2 + 1, row + 13, c.label, INK);
     snprintf(buf, sizeof buf, "H %d\xB0", c.high);
     drawTextRight(g, SANS10, bx1, row + 13, buf, INK);
 
     if (c.uv >= 0) {
       const char *rating = c.uv <= 2 ? "low" : c.uv <= 5 ? "ok" : c.uv <= 7 ? "high" : "v.high";
       snprintf(buf, sizeof buf, "UV %d %s", c.uv, rating);
-      pill(g, 86, 160, row + 27, row + 41, buf, c.uv > 5);
+      note(g, bx0, row + 30, false, buf, c.uv > 5);
     }
     if (c.aqi >= 0) {
       const char *rating = c.aqi <= 50 ? "good" : c.aqi <= 100 ? "fair" : c.aqi <= 150 ? "bad" : "v.bad";
       snprintf(buf, sizeof buf, "AQI %d %s", c.aqi, rating);
-      pill(g, 164, CONTENT_R, row + 27, row + 41, buf, c.aqi > 100);
+      note(g, bx1, row + 30, true, buf, c.aqi > 100);
     }
   }
   pageDots(g, 1);
