@@ -137,14 +137,19 @@ static void smallIcon(Adafruit_GFX &g, Icon kind, int cx, int cy) {
 }
 
 // A rounded pill with centred text: solid black for a warning, else outlined.
-static void pill(Adafruit_GFX &g, int x0, int x1, int y0, int y1, const char *text, bool warn) {
+// The rating word is dropped when the text would not fit.
+static void pill(Adafruit_GFX &g, int x0, int x1, int y0, int y1, const char *name, int value,
+                 const char *rating, bool warn) {
   const int w = x1 - x0, h = y1 - y0, r = 7;
+  char text[24];
+  snprintf(text, sizeof text, "%s %d %s", name, value, rating);
+  if (textWidth(BOLD10, text) > w - 6) snprintf(text, sizeof text, "%s %d", name, value);
   if (warn) {
     g.fillRoundRect(x0, y0, w, h, r, INK);
   } else {
     g.drawRoundRect(x0, y0, w, h, r, INK);
   }
-  drawTextCenter(g, SANS10, (x0 + x1) / 2, y0 + 1, text, warn ? PAPER : INK);
+  drawTextCenter(g, BOLD10, (x0 + x1) / 2, y0 + 1, text, warn ? PAPER : INK);
 }
 
 void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, const CityWeather *cities) {
@@ -174,20 +179,18 @@ void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, cons
     g.fillTriangle(mx - 4, by0 - 4, mx + 4, by0 - 4, mx, by0 + 1, INK);
     g.fillRect(mx - 1, by0, 2, by1 - by0 + 1, INK);
     snprintf(buf, sizeof buf, "L %d\xB0", c.low);
-    drawText(g, SANS10, bx0, row + 13, buf, INK);
-    drawTextCenter(g, SANS10, (bx0 + bx1) / 2 + 1, row + 13, c.label, INK);
+    drawText(g, BOLD10, bx0, row + 13, buf, INK);
+    drawTextCenter(g, BOLD10, (bx0 + bx1) / 2 + 1, row + 13, c.label, INK);
     snprintf(buf, sizeof buf, "H %d\xB0", c.high);
-    drawTextRight(g, SANS10, bx1, row + 13, buf, INK);
+    drawTextRight(g, BOLD10, bx1, row + 13, buf, INK);
 
     if (c.uv >= 0) {
       const char *rating = c.uv <= 2 ? "low" : c.uv <= 5 ? "ok" : c.uv <= 7 ? "high" : "v.high";
-      snprintf(buf, sizeof buf, "UV %d %s", c.uv, rating);
-      pill(g, 86, 160, row + 27, row + 41, buf, c.uv > 5);
+      pill(g, 84, 156, row + 27, row + 41, "UV", c.uv, rating, c.uv > 5);
     }
     if (c.aqi >= 0) {
       const char *rating = c.aqi <= 50 ? "good" : c.aqi <= 100 ? "fair" : c.aqi <= 150 ? "bad" : "v.bad";
-      snprintf(buf, sizeof buf, "AQI %d %s", c.aqi, rating);
-      pill(g, 164, CONTENT_R, row + 27, row + 41, buf, c.aqi > 100);
+      pill(g, 159, CONTENT_R, row + 27, row + 41, "AQI", c.aqi, rating, c.aqi > 100);
     }
   }
   pageDots(g, 1);
