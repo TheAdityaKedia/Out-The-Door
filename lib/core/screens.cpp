@@ -17,9 +17,14 @@ static void header(Adafruit_GFX &g, const char *left, const char *right) {
   drawTextRight(g, BOLD12, SCREEN_W - 4, 1, right, PAPER);
 }
 
+// Page dots run down the right edge, beside the scroll wheel; screen content
+// stays left of CONTENT_R to leave them room.
+static const int CONTENT_R = SCREEN_W - 12, DOTS_X = SCREEN_W - 5;
+
 static void pageDots(Adafruit_GFX &g, int page) {
+  const int top = 16 + (SCREEN_H - 16) / 2 - (PAGE_COUNT - 1) * 5;
   for (int k = 0; k < PAGE_COUNT; k++) {
-    const int x = SCREEN_W / 2 - 18 + k * 12, y = SCREEN_H - 5;
+    const int x = DOTS_X, y = top + k * 10;
     if (k == page)
       g.fillCircle(x, y, 2, INK);
     else
@@ -43,20 +48,20 @@ void drawTrains(Adafruit_GFX &g, const Now &now, const TrainsView &v) {
     formatTime(now, buf, sizeof buf);
   header(g, v.stationLabel, buf);
   if (!v.minutes || v.ageSeconds > v.giveUpAfter) {
-    drawTextCenter(g, BOLD14, SCREEN_W / 2, 44, "No train times right now", INK);
-    drawTextCenter(g, SANS11, SCREEN_W / 2, 66, "Checking again shortly", INK);
+    drawTextCenter(g, BOLD14, (4 + CONTENT_R) / 2, 44, "No train times right now", INK);
+    drawTextCenter(g, SANS11, (4 + CONTENT_R) / 2, 66, "Checking again shortly", INK);
     pageDots(g, 0);
     return;
   }
   // Three roomy rows, or four compact ones.
-  const int top = compact ? 17 : 18, rowH = compact ? 24 : 32;
+  const int top = compact ? 17 : 18, rowH = compact ? 26 : 34;
   const Font &labelFont = BOLD14, &firstFont = compact ? BOLD18 : BOLD26, &laterFont = compact ? BOLD14 : BOLD16;
-  const int labelY = compact ? 5 : 8, firstY = compact ? 3 : 1, laterY = compact ? 5 : 10;
+  const int labelY = compact ? 6 : 9, firstY = compact ? 4 : 2, laterY = compact ? 6 : 11;
   for (int i = 0; i < v.rowCount; i++) {
     const int y = top + i * rowH;
     const TrainRow &row = v.minutes[i];
     drawText(g, labelFont, 4, y + labelY, v.rows[i].label, INK);
-    int right = SCREEN_W - 4;
+    int right = CONTENT_R;
     if (row.count >= 2) {
       snprintf(buf, sizeof buf, "%d", row.minutes[1]);
       drawTextRight(g, laterFont, right, y + laterY, buf, INK);
@@ -68,14 +73,13 @@ void drawTrains(Adafruit_GFX &g, const Now &now, const TrainsView &v) {
     } else {
       drawTextRight(g, laterFont, right, y + laterY, "--", INK);
     }
-    if (i < v.rowCount - 1) dottedRule(g, 4, SCREEN_W - 4, y + rowH - 1);
+    if (i < v.rowCount - 1) dottedRule(g, 4, CONTENT_R, y + rowH - 1);
   }
   if (stale && !compact) {
     snprintf(buf, sizeof buf, "updated %ld min ago", v.ageSeconds / 60);
-    drawTextCenter(g, BOLD10, SCREEN_W / 2, SCREEN_H - 12, buf, INK);
-  } else {
-    pageDots(g, 0);
+    drawTextCenter(g, BOLD10, (4 + CONTENT_R) / 2, SCREEN_H - 12, buf, INK);
   }
+  pageDots(g, 0);
 }
 
 // ---- small outline weather icons, centred on (cx, cy), about 20 px across
@@ -147,7 +151,7 @@ void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, cons
   char buf[32];
   formatDayMonthDay(now, buf, sizeof buf);
   header(g, "Weather", buf);
-  g.drawFastHLine(4, 68, 242, INK);
+  g.drawFastHLine(4, 68, CONTENT_R - 3, INK);
   for (int i = 0; i < 2; i++) {
     const int row = i ? 72 : 20;
     drawText(g, BOLD12, 4, row, config[i].label, INK);
@@ -161,7 +165,7 @@ void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, cons
     smallIcon(g, c.icon, 74, row + 27);
 
     // Where today's temperature sits between the low and the high.
-    const int bx0 = 124, bx1 = 242, by0 = row + 4, by1 = row + 11;
+    const int bx0 = 120, bx1 = CONTENT_R - 2, by0 = row + 4, by1 = row + 11;
     g.fillRect(bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, PAPER);
     g.drawRect(bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, INK);
     int mx = c.high > c.low ? bx0 + (c.temp - c.low) * (bx1 - bx0) / (c.high - c.low) : (bx0 + bx1) / 2;
@@ -178,22 +182,24 @@ void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, cons
     if (c.uv >= 0) {
       const char *rating = c.uv <= 2 ? "low" : c.uv <= 5 ? "ok" : c.uv <= 7 ? "high" : "v.high";
       snprintf(buf, sizeof buf, "UV %d %s", c.uv, rating);
-      pill(g, 88, 164, row + 27, row + 41, buf, c.uv > 5);
+      pill(g, 86, 160, row + 27, row + 41, buf, c.uv > 5);
     }
     if (c.aqi >= 0) {
       const char *rating = c.aqi <= 50 ? "good" : c.aqi <= 100 ? "fair" : c.aqi <= 150 ? "bad" : "v.bad";
       snprintf(buf, sizeof buf, "AQI %d %s", c.aqi, rating);
-      pill(g, 168, 244, row + 27, row + 41, buf, c.aqi > 100);
+      pill(g, 164, CONTENT_R, row + 27, row + 41, buf, c.aqi > 100);
     }
   }
+  pageDots(g, 1);
 }
 
 void drawOblique(Adafruit_GFX &g, const Now &now, const char *card, int page) {
   char buf[32];
   formatMonthDay(now, buf, sizeof buf);
   header(g, "Oblique Strategies", buf);
-  const int boxTop = 22, boxBottom = SCREEN_H - 12;
-  g.drawRect(6, boxTop, SCREEN_W - 12, boxBottom - boxTop + 1, INK);
+  // Without dots (quiet hours) the card takes the full width.
+  const int boxTop = 22, boxBottom = SCREEN_H - 6, boxR = page >= 0 ? CONTENT_R : SCREEN_W - 6;
+  g.drawRect(6, boxTop, boxR - 6, boxBottom - boxTop + 1, INK);
 
   // Largest size that fits: (font, line height, most lines).
   struct Size { const Font *font; int lineH, most; };
@@ -202,14 +208,14 @@ void drawOblique(Adafruit_GFX &g, const Now &now, const char *card, int page) {
   int n = 0;
   const Size *pick = &sizes[2];
   for (const Size &s : sizes) {
-    n = wrapText(*s.font, card, SCREEN_W - 28, lines, s.most);
+    n = wrapText(*s.font, card, boxR - 22, lines, s.most);
     pick = &s;
     if (n <= s.most) break;
   }
   if (n > pick->most) n = pick->most;
   const int block = (n - 1) * pick->lineH + pick->font->height;
   int y = boxTop + (boxBottom - boxTop - block) / 2 + 1;
-  for (int i = 0; i < n; i++, y += pick->lineH) drawTextCenter(g, *pick->font, SCREEN_W / 2, y, lines[i], INK);
+  for (int i = 0; i < n; i++, y += pick->lineH) drawTextCenter(g, *pick->font, (6 + boxR) / 2, y, lines[i], INK);
   if (page >= 0) pageDots(g, page);
 }
 
