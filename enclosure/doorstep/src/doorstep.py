@@ -1,8 +1,8 @@
 # Clock-style case for CrowPanel 2.13". Front frame F: front face plane y=0, outward -y, z up, x right.
 import FreeCAD as App, Part, math, os
 V=App.Vector
-OUT='/mnt/project-files/cloud-freecad/clock-case/'
-W,H,D,RC,LEAN=74.0,44.0,30.0,9.0,6.0
+OUT='/mnt/project-files/cloud-freecad/clock-case/snap-ring/'
+W,H,D,RC,LEAN=68.0,44.0,30.0,9.0,6.0
 WALL,RF,RB=1.8,3.0,4.0         # wall, front edge fillet, back edge fillet
 LENS=1.5                       # front acrylic thickness
 def rrect(w,h,r,y=0):
@@ -65,26 +65,29 @@ body,lens,inner=toF(bw),toF(lensw),toF(iw)
 zb=-H/2
 # ---------- panel ----------
 pn=Part.read('/mnt/project-files/case/crowpanel_2.13.step')
-OY=LENS+0.1+0.9; CX=-2.625
+OY=LENS+0.1+0.9; CX=0.0   # body centred on the board; display sits 2.6 mm right of centre
 PM=App.Matrix(0,0,-1,CX, 0,-1,0,OY, -1,0,0,0, 0,0,0,1)   # F = PM * panel
 pnF=pn.transformed(PM)
 def P(px,py,pz): return PM.multVec(V(px,py,pz))
-# ---------- orange wheel cap ----------
-wc=P(0,0,-27); ax=V(0,1,0)   # wheel axis along F y
-def cyl(r,y0,y1): return Part.makeCylinder(r,y1-y0,V(wc.x,y0,wc.z),ax)
+# ---------- orange snap-on ring (MENU/BACK buttons removed from the board) ----------
+# C-shaped ring with internal teeth that snaps over the wheel's knurled rim (tips r 7.3) in the layer
+# panel y -3.6..-2.6, clear of the board and of every other part as it turns.
 fy=lambda py:-py+OY
-cup=cyl(7.25,fy(-3.0),fy(-3.8)).cut(cyl(6.8,fy(-3.0)-0.01,fy(-3.8)))   # grips back 0.8 mm of wheel rim
-stem=cyl(7.25,fy(-3.8),fy(-10.1))
-RD=17.5; drum=cyl(RD,fy(-10.1),fy(-14.9))
-for i in range(72):
-    a=2*math.pi*i/72
-    drum=drum.cut(Part.makeCylinder(0.45,10,V(wc.x+RD*math.cos(a),fy(-10.1)-1,wc.z+RD*math.sin(a)),ax))
-knob=cup.fuse(stem).fuse(drum).removeSplitter()
-# slot for drum in right wall (0.8 mm radial clearance, 0.5 mm each side)
-slot=cyl(RD+0.8,fy(-10.1)-0.5,fy(-14.9)+0.5)
+WC=P(0,0,-27); ax=V(0,1,0)
+RI,RO=7.0,10.5
+def cyl(r,y0,y1): return Part.makeCylinder(r,y1-y0,V(WC.x,y0,WC.z),ax)
+ring=cyl(RO,fy(-2.6),fy(-3.6)).cut(cyl(RI,fy(-2.6),fy(-3.6)))
+# 230 deg C: open toward the board, 12 mm gap at the inner edge snaps over the rim's ~9.7 mm exposed chord
+gap=Part.makeBox(30,5,12.0,V(WC.x-30-RI+2.2,fy(-2.6)-1,WC.z-6.0))
+ring=ring.cut(gap)
+for i in range(64):
+    a_=2*math.pi*i/64
+    ring=ring.cut(Part.makeCylinder(0.45,5,V(WC.x+RO*math.cos(a_),fy(-2.6)-1,WC.z+RO*math.sin(a_)),ax))
+knob=ring.removeSplitter()
+slot=Part.makeCylinder(RO+0.8,fy(-3.6)-fy(-2.6)+1.0,V(WC.x,fy(-2.6)-0.5,WC.z),ax)
 body=body.cut(slot)
 # ---------- battery (103040, ~1500 mAh) ----------
-bat=Part.makeBox(40,10,30,V(-33.5,fy(-9.8)+0.6,-15))
+bat=Part.makeBox(40,10,30,V(-24,fy(-9.8)+0.6,-15))
 # ---------- USB-C tunnel through base + cable groove ----------
 uc=P(15.6,-2.71,0.6)
 tun=Part.makeBox(13,7.5,30,V(uc.x-6.5,uc.y-3.75,uc.z-30))
@@ -92,17 +95,13 @@ body=body.cut(tun)
 gw=toW(body); gb=gw.BoundBox
 groove=Part.makeBox(5.5,60,3.2,V(toW(Part.Vertex(uc)).Point.x-2.75,toW(Part.Vertex(uc)).Point.y,zb-1))
 body=toF(gw.cut(groove))
-# ---------- button pin-holes (MENU/EXIT) on right end ----------
-for px in(-11.15,11.15):
-    bp=P(px,-3.35,-30.3)
-    body=body.cut(Part.makeCylinder(0.8,20,V(bp.x,bp.y,bp.z),V(1,0,0)))
 print("body valid",body.isValid())
 # ---------- checks ----------
 cav=inner
 def vol(a,b):
     try: return round(a.common(b).Volume,2)
     except Exception as e: return str(e)
-solids=pnF.Solids
+solids=[x for x in pnF.Solids if not (50<x.Volume<60 or 5<x.Volume<6)]   # MENU/BACK removed
 for x in solids:
     if knob.BoundBox.intersect(x.BoundBox):
         v=knob.common(x).Volume
@@ -114,10 +113,11 @@ kb=toW(knob).BoundBox; bb=toW(body).BoundBox
 print("world body bbox %.1f x %.1f x %.1f"%(bb.XLength,bb.YLength,bb.ZLength),"knob juts %.1f mm"%(kb.XMax-bb.XMax))
 # ---------- save ----------
 if not os.environ.get("CHECK"):
-    for n,sh in [('body',body),('front_lens',lens),('orange_wheel_cap',knob)]:
+    for n,sh in [('body',body),('front_lens',lens),('orange_snap_ring',knob)]:
         w=toW(sh); w.exportStep(OUT+n+'.step')
         import Mesh; m=Mesh.Mesh(); m.addFacets(w.tessellate(0.03)); m.write(OUT+n+'.stl')
     import pickle
     for n,sh in [('body',body),('lens',lens),('knob',knob),('bat',bat),('panel',pnF)]:
-        toW(sh).exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/cc_'+n+'.brep')
+        sh.exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/crF_'+n+'.brep')
+        toW(sh).exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/cr_'+n+'.brep')
     print("SAVED")
