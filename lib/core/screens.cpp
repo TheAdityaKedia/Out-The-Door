@@ -240,25 +240,32 @@ void drawMoon(Adafruit_GFX &g, const Now &now) {
   formatMonthDay(now, buf, sizeof buf);
   header(g, "Moon", buf);
   const double age = moonAge(now.utcDays);
-  moonDisc(g, 40, 70, 32, age);
 
   const char *name = moonPhaseName(age);
   const char *space = strchr(name, ' ');
-  char first[16];
+  char first[16], lit[16], next[48];
   snprintf(first, sizeof first, "%.*s", (int)(space - name), name);
-  const int tx = 84, ty = 30;  // text block centred on the disc
-  drawText(g, BOLD18, tx, ty, first, INK);
-  drawText(g, BOLD18, tx, ty + 20, space + 1, INK);
-  snprintf(buf, sizeof buf, "%d%% lit", (int)lround(moonIllumination(age) * 100));
-  drawText(g, BOLD14, tx, ty + 44, buf, INK);
-
+  snprintf(lit, sizeof lit, "%d%% lit", (int)lround(moonIllumination(age) * 100));
   const bool full = strcmp(name, "Full Moon") == 0;
   const double ahead = full ? fmod(SYNODIC_MONTH - age, SYNODIC_MONTH) : daysUntilFull(age);
   const Now then = makeNow((time_t)(now.epoch + (long)(ahead * 86400)));
   char day[24];
   formatDayMonthDay(then, day, sizeof day);
-  snprintf(buf, sizeof buf, "%s %s", full ? "New moon" : "Full moon", day);
-  drawText(g, SANS11, tx, ty + 64, buf, INK);
+  snprintf(next, sizeof next, "%s %s", full ? "New moon" : "Full moon", day);
+
+  // Disc and text centred as one block, left to right between the screen
+  // edge and the dots, and top to bottom under the header.
+  int textW = textWidth(BOLD18, first);
+  const int widths[] = {textWidth(BOLD18, space + 1), textWidth(BOLD14, lit), textWidth(SANS11, next)};
+  for (int w : widths) if (w > textW) textW = w;
+  const int r = 32, gap = 12, blockW = 2 * r + gap + textW;
+  const int left = (CONTENT_R + 4 - blockW) / 2;
+  moonDisc(g, left + r, 70, r, age);
+  const int tx = left + 2 * r + gap, ty = 30;
+  drawText(g, BOLD18, tx, ty, first, INK);
+  drawText(g, BOLD18, tx, ty + 20, space + 1, INK);
+  drawText(g, BOLD14, tx, ty + 44, lit, INK);
+  drawText(g, SANS11, tx, ty + 64, next, INK);
   pageDots(g, 3);
 }
 
