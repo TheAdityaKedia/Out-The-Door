@@ -1,10 +1,10 @@
 # Clock-style case for CrowPanel 2.13". Front frame F: front face plane y=0, outward -y, z up, x right.
 import FreeCAD as App, Part, math, os
 V=App.Vector
-OUT='/mnt/project-files/cloud-freecad/clock-case/bezel/'
+OUT='/mnt/project-files/cloud-freecad/clock-case/'
 W,H,D,RC,LEAN=80.0,44.0,30.0,9.0,6.0
 WALL,RF,RB=1.8,3.0,4.0         # wall, front edge fillet, back edge fillet
-LENS=1.5                       # front acrylic thickness
+LENS=2.0                       # front pocket depth: 2 mm acrylic OR the 2 mm bevelled insert
 def rrect(w,h,r,y=0):
     p=Part.Face(Part.Wire(Part.makePolygon([V(-w/2+r,y,-h/2),V(w/2-r,y,-h/2),V(w/2-r,y,h/2),V(-w/2+r,y,h/2),V(-w/2+r,y,-h/2)])))
     f=Part.makeBox(w-2*r,1,h,V(-w/2+r,y,-h/2)).fuse(Part.makeBox(w,1,h-2*r,V(-w/2,y,-h/2+r)))
@@ -58,27 +58,29 @@ print("outer valid",ow.isValid(),"vol",round(ow.Volume))
 iw=ow.makeOffsetShape(-WALL,0.01,join=0)
 print("inner valid",iw.isValid())
 bw=ow.cut(iw)
-body,inner,outer_F=toF(bw),toF(iw),toF(ow)
-# sloped bezel: the whole flat front rolls inward in one continuous convex curve, from where the outer
-# edge fillet ends down to a window 0.3 mm inside the active area. Symmetric (display centred on the body).
+bw=bw.cut(rr_world(W-2*RF,H-2*RF,RC-RF,-30,60).common(fslab(-1,LENS)))          # lens pocket
+bw=bw.cut(rr_world(W-2*RF-3,H-2*RF-3,RC-RF-1.5,-30,60).common(fslab(-1,10)))     # front opening
+lensw=rr_world(W-2*RF-0.2,H-2*RF-0.2,RC-RF-0.1,-30,60).common(fslab(0,LENS))
+body,lens,inner=toF(bw),toF(lensw),toF(iw)
+# bevelled insert: same outline/thickness as the lens; its front rolls inward in one convex curve
+# from the seam down to a window 0.3 mm inside the active area at its back face
 AAW,AAH=48.54,23.70
-FRONT=float(os.environ.get("FRONT","2.0"))                         # glass sits this far behind the face
-ow_,oh_,or_=W-2*RF,H-2*RF,RC-RF   # outline of the flat front
-iw_,ih_,ir_=AAW-0.6,AAH-0.6,0.8   # window at the glass
-secs=[]
-for t in (0.0,0.2,0.4,0.6,0.8,1.0):
-    y=FRONT*t**1.6
-    secs.append(rr_wire(ow_+(iw_-ow_)*t, oh_+(ih_-oh_)*t, or_+(ir_-or_)*t, y))
+ow_,oh_,or_=W-2*RF-0.2,H-2*RF-0.2,RC-RF-0.1
+iw_,ih_,ir_=AAW-0.6,AAH-0.6,0.8
+secs=[rr_wire(ow_+(iw_-ow_)*t, oh_+(ih_-oh_)*t, or_+(ir_-or_)*t, LENS*t**1.6) for t in (0.0,0.2,0.4,0.6,0.8,1.0)]
 slope=Part.makeLoft(secs,True,False)
-cutter=slope.fuse(Part.Face(rr_wire(iw_,ih_,ir_,FRONT)).extrude(V(0,1.0,0))).fuse(Part.Face(rr_wire(ow_,oh_,or_,-1)).extrude(V(0,1.0,0)))
-body=body.fuse(outer_F.common(Part.makeBox(200,FRONT,200,V(-100,0,-100)))).cut(cutter)
-# pocket for the CrowPanel behind a thin front wall (board 63.2 x 31.3 + 0.4 clearance)
-body=body.cut(Part.makeBox(63.6,4.0,31.7,V(-31.8-2.625,FRONT,-15.85)))
-lens=Part.makeBox(AAW,0.05,AAH,V(-AAW/2,FRONT-0.05,-AAH/2))   # stands in for the e-paper surface in renders
+bcut=slope.fuse(Part.Face(rr_wire(iw_,ih_,ir_,LENS)).extrude(V(0,1.0,0))).fuse(Part.Face(rr_wire(ow_+2,oh_+2,or_+1,-1)).extrude(V(0,1.0,0)))
+bevel=lens.cut(bcut)
+# friction bumps: 4 short ridges on the insert's top and bottom edges, 0.25 mm proud (0.15 mm interference)
+for bx in (-16.0,16.0):
+    for sz in (-1,1):
+        bevel=bevel.fuse(Part.makeCylinder(0.6,6,V(bx-3,LENS/2,sz*(oh_/2-0.35)),V(1,0,0)))
+bevel=bevel.removeSplitter()
+print("bevel valid",bevel.isValid(),round(bevel.Volume,1))
 zb=-H/2
 # ---------- panel ----------
 pn=Part.read('/mnt/project-files/case/crowpanel_2.13.step')
-OY=FRONT+0.9; CX=-2.625      # glass sits against the back of the front wall
+OY=LENS+0.1+0.9; CX=-2.625
 PM=App.Matrix(0,0,-1,CX, 0,-1,0,OY, -1,0,0,0, 0,0,0,1)   # F = PM * panel
 pnF=pn.transformed(PM)
 def P(px,py,pz): return PM.multVec(V(px,py,pz))
@@ -106,7 +108,7 @@ post=cyl(3.4,fy(-9.5)+0.6,fy(-9.5)+40).common(inner.common(Part.makeBox(200,200,
 hole=cyl(1.65,fy(-9.5),fy(-9.5)+12).fuse(cyl(1.65,fy(-9.5),fy(-9.5)+12,AX+V(-1.2,0,0))).fuse(Part.makeBox(1.2,12,3.3,V(AX.x-1.2,fy(-9.5),AX.z-1.65)))
 body=body.fuse(post).cut(hole)
 # ---------- battery (103040, ~1500 mAh) ----------
-bat=Part.makeBox(40,10,30,V(-33.5,fy(-9.8)+0.6,-15))
+bat=Part.makeBox(40,10,30,V(-29.0,fy(-9.8)+0.6,-15))
 # ---------- USB-C tunnel through base + cable groove ----------
 uc=P(15.6,-2.71,0.6)
 tun=Part.makeBox(13,7.5,30,V(uc.x-6.5,uc.y-3.75,uc.z-30))
@@ -118,10 +120,27 @@ body=toF(gw.cut(groove))
 for px in(-11.15,11.15):
     bp=P(px,-3.35,-30.3)
     body=body.cut(Part.makeCylinder(0.8,20,V(bp.x,bp.y,bp.z),V(1,0,0)))
-SPLIT=5.5
-slabF=Part.makeBox(200,SPLIT+50,200,V(-100,-50,-100))
-lid=body.common(slabF); shell=body.cut(slabF)
-print("body valid",body.isValid(),"lid",lid.isValid(),"shell",shell.isValid())
+# ---------- board supports: stop the CrowPanel moving backwards ----------
+# The front (lens or bevel insert) stops it moving forward; these touch the back of the board.
+# Two flat posts on the board's far corners; two ribs at the wheel end
+# (those corner holes sit under the MENU/BACK buttons).
+far=10.0  # depth the supports run back to (merged into the back wall)
+sup=[]
+for px in (-14.6,14.6):
+    c=P(px,-2.1,30.6); post=Part.makeCylinder(1.8,40,V(c.x,c.y,c.z),V(0,1,0))
+    pin=Part.makeCylinder(0.85,1.5,V(c.x,c.y-1.5,c.z),V(0,1,0))
+    sup.append(post)
+    r=P(px,-2.1,-24.5); sup.append(Part.makeBox(2.0,40,2.0,V(r.x-1.0,r.y,r.z-1.0)))
+supports=sup[0]
+for x_ in sup[1:]: supports=supports.fuse(x_)
+supports=supports.common(inner)
+body=body.fuse(supports)
+for x in pnF.Solids:
+    if x.BoundBox.intersect(supports.BoundBox):
+        v=supports.common(x).Volume
+        if v>0.01: print("support hits",round(v,2),x.BoundBox)
+print("support x bat",round(supports.common(bat).Volume,2) if 'bat' in dir() else 'n/a')
+print("body valid",body.isValid())
 # ---------- checks ----------
 cav=inner
 def vol(a,b):
@@ -139,11 +158,11 @@ kb=toW(knob).BoundBox; bb=toW(body).BoundBox
 print("world body bbox %.1f x %.1f x %.1f"%(bb.XLength,bb.YLength,bb.ZLength),"knob juts %.1f mm"%(kb.XMax-bb.XMax))
 # ---------- save ----------
 if not os.environ.get("CHECK"):
-    for n,sh in [('front_lid',lid),('back_shell',shell),('orange_drum',knob)]:
+    for n,sh in [('body',body),('front_lens',lens),('front_bevel',bevel),('orange_wheel_cap',knob)]:
         w=toW(sh); w.exportStep(OUT+n+'.step')
         import Mesh; m=Mesh.Mesh(); m.addFacets(w.tessellate(0.03)); m.write(OUT+n+'.stl')
     import pickle
-    for n,sh in [('lid',lid),('shell',shell),('lens',lens),('knob',knob),('bat',bat),('panel',pnF)]:
-        sh.exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/cbF_'+n+'.brep')
-        toW(sh).exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/cb_'+n+'.brep')
+    for n,sh in [('body',body),('lens',lens),('bevel',bevel),('knob',knob),('bat',bat),('panel',pnF)]:
+        sh.exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/ccF_'+n+'.brep')
+        toW(sh).exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/cc_'+n+'.brep')
     print("SAVED")
