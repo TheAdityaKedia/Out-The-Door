@@ -265,14 +265,15 @@ void drawMoon(Adafruit_GFX &g, const Now &now) {
   pageDots(g, 3);
 }
 
-// Half a sun on the horizon at (cx, horizon y), about 15 px wide, with a
-// small arrow under the horizon: up for sunrise, down for sunset.
+// Half a sun on the horizon at (cx, horizon y), about 17 px wide, with a
+// small arrow under the horizon: up for sunrise, down for sunset. Only the
+// sunrise has rays, so the two read differently at a glance.
 static void sunIcon(Adafruit_GFX &g, int cx, int hy, bool up) {
   g.drawFastHLine(cx - 8, hy, 17, INK);
   for (int dy = 1; dy <= 4; dy++)
     for (int dx = -4; dx <= 4; dx++)
       if (dx * dx + dy * dy <= 18) g.drawPixel(cx + dx, hy - dy, INK);
-  for (int k = 1; k <= 3; k++) {
+  for (int k = 1; up && k <= 3; k++) {
     const double a = M_PI + k * M_PI / 4, c = cos(a), s = sin(a);
     g.drawLine((int)lround(cx + 6 * c), (int)lround(hy + 6 * s), (int)lround(cx + 8 * c), (int)lround(hy + 8 * s), INK);
   }
