@@ -8,8 +8,13 @@
 #include "config.h"
 #include "secrets.h"
 
+// Whether the last attempt to join Wi-Fi worked, kept across deep sleep.
+RTC_DATA_ATTR static bool lastOk = true;
+
+bool wifiLastOk() { return lastOk; }
+
 bool wifiConnect(uint32_t timeoutMs) {
-  if (WiFi.status() == WL_CONNECTED) return true;
+  if (WiFi.status() == WL_CONNECTED) return lastOk = true;
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -17,12 +22,12 @@ bool wifiConnect(uint32_t timeoutMs) {
   while (WiFi.status() != WL_CONNECTED) {
     if (millis() - start > timeoutMs) {
       Serial.println("wifi: timed out");
-      return false;
+      return lastOk = false;
     }
     delay(200);
   }
   Serial.printf("wifi: connected, %s\n", WiFi.localIP().toString().c_str());
-  return true;
+  return lastOk = true;
 }
 
 void wifiOff() {

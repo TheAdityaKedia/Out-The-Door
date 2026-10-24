@@ -171,6 +171,9 @@ int main(int argc, char **argv) {
     drawOblique(g, now, "Look closely at the most embarrassing details and amplify them");
   });
   preview(out, "8_quiet", [&](Adafruit_GFX &g) { drawOblique(g, now, card, -1); });
+  setWifiShown(false);
+  preview(out, "10_trains_no_wifi", [&](Adafruit_GFX &g) { drawTrains(g, now, trains(0, true)); });
+  setWifiShown(true);
   preview(out, "9_splash", [&](Adafruit_GFX &g) { drawSplash(g, "Connecting to Wi-Fi..."); });
 
   if (failures) {

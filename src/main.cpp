@@ -102,6 +102,7 @@ static void syncClockIfDue() {
 
 static void draw(int which) {
   const Now now = makeNow(nowSeconds());
+  setWifiShown(wifiLastOk());
   canvas.fillScreen(PAPER);
   switch (which) {
     case 0: {

@@ -26,5 +26,8 @@ void drawOblique(Adafruit_GFX &g, const Now &now, const char *card, int page = 2
 void drawMoon(Adafruit_GFX &g, const Now &now);
 // Day length and sunrise/sunset at where, with the moon below.
 void drawSunMoon(Adafruit_GFX &g, const Now &now, const CityConfig &where);
+// Whether the last Wi-Fi connection worked; the header's Wi-Fi icon shows
+// this (crossed out when false). Set it before drawing a screen.
+void setWifiShown(bool connected);
 // Shown while the board starts up.
 void drawSplash(Adafruit_GFX &g, const char *line);

@@ -11,10 +11,33 @@
 
 // ---- pieces shared by several screens
 
+static bool wifiShown = true;
+void setWifiShown(bool connected) { wifiShown = connected; }
+
+// Wi-Fi symbol in paper on the black header: a dot and three arcs, about
+// 15 px wide, with its dot at (cx, by). Crossed out when not connected.
+static void wifiIcon(Adafruit_GFX &g, int cx, int by, bool connected) {
+  g.fillRect(cx - 1, by - 1, 3, 2, PAPER);
+  for (int r = 4; r <= 10; r += 3) {
+    for (int a = -135; a <= -45; a += 3) {
+      const double t = a * M_PI / 180;
+      g.drawPixel((int)lround(cx + r * cos(t)), (int)lround(by + r * sin(t)), PAPER);
+      g.drawPixel((int)lround(cx + (r + 1) * cos(t)), (int)lround(by + (r + 1) * sin(t)), PAPER);
+    }
+  }
+  if (!connected) {
+    // A slash, edged in ink so it reads against the arcs.
+    for (int d = -2; d <= 3; d++) g.drawLine(cx - 7 + d, by - 11, cx + 7 + d, by + 1, INK);
+    for (int d = 0; d <= 1; d++) g.drawLine(cx - 7 + d, by - 11, cx + 7 + d, by + 1, PAPER);
+  }
+}
+
 static void header(Adafruit_GFX &g, const char *left, const char *right) {
   g.fillRect(0, 0, SCREEN_W, 16, INK);
   drawText(g, BOLD12, 4, 1, left, PAPER);
-  drawTextRight(g, BOLD12, SCREEN_W - 4, 1, right, PAPER);
+  const int iconCx = SCREEN_W - 11;
+  wifiIcon(g, iconCx, 13, wifiShown);
+  drawTextRight(g, BOLD12, iconCx - 11, 1, right, PAPER);
 }
 
 // Page dots run down the right edge, beside the scroll wheel; screen content
@@ -339,7 +362,22 @@ void drawSunMoon(Adafruit_GFX &g, const Now &now, const CityConfig &where) {
   pageDots(g, 3);
 }
 
+// An open door, about 24 px wide and 34 tall, top-left at (x, y): the
+// doorway in outline and the door swung open towards you on its left hinge.
+static void doorIcon(Adafruit_GFX &g, int x, int y) {
+  g.drawRect(x + 6, y, 18, 34, INK);  // frame
+  g.drawRect(x + 7, y + 1, 16, 33, INK);
+  g.fillTriangle(x + 7, y + 1, x, y + 5, x, y + 34, INK);  // door leaf
+  g.fillTriangle(x + 7, y + 1, x + 7, y + 34, x, y + 34, INK);
+  g.fillRect(x + 2, y + 17, 2, 3, PAPER);  // knob
+  g.drawFastHLine(x - 2, y + 34, 30, INK);  // floor
+}
+
 void drawSplash(Adafruit_GFX &g, const char *line) {
-  drawTextCenter(g, BOLD14, SCREEN_W / 2, 40, "out the door", INK);
+  static const char *TITLE = "Out the Door";
+  const int titleW = textWidth(BOLD14, TITLE), groupW = 26 + 8 + titleW;
+  const int x0 = (SCREEN_W - groupW) / 2;
+  doorIcon(g, x0 + 2, 26);
+  drawText(g, BOLD14, x0 + 34, 40, TITLE, INK);
   drawTextCenter(g, SANS11, SCREEN_W / 2, 64, line, INK);
 }
