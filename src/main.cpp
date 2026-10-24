@@ -1,10 +1,11 @@
 // out-the-door: BART departures, weather, an Oblique Strategies card and the
 // moon phase on the CrowPanel's 2.13" e-paper screen, run from a battery.
 //
-// The board spends almost all its time in deep sleep, resting on the moon
-// screen, which it redraws once an hour. A press of the wheel wakes it for five
-// minutes, starting on fresh train times, with screens cycling and the wheel
-// flipping between them; then it returns to the moon and sleeps.
+// The board spends almost all its time in deep sleep, resting on a 4-grey
+// screensaver (Red Fuji). A press of the wheel wakes it for five minutes,
+// starting on fresh train times, with screens cycling and the wheel flipping
+// between them; then it returns to Red Fuji and sleeps. Menu sends it to sleep
+// straight away, and pressed while asleep it flips to the next screensaver.
 #include <Arduino.h>
 #include <driver/rtc_io.h>
 #include <esp_sleep.h>
@@ -46,7 +47,6 @@ RTC_DATA_ATTR static bool haveWeather;
 RTC_DATA_ATTR static time_t weatherAt, weatherTriedAt;
 RTC_DATA_ATTR static time_t clockSyncedAt;
 RTC_DATA_ATTR static int changes;
-RTC_DATA_ATTR static bool restingOnArt;  // the screensaver is up; leave it until a wake
 
 static int page = 0;
 static uint32_t shownAt = 0;
@@ -142,22 +142,11 @@ static void splash(const char *line) {
   panel.show(canvas, true);
 }
 
-// The screen the board rests on while asleep.
-static const int REST_PAGE = PAGE_COUNT - 1;  // moon
-
-// Seconds until the next hourly moon redraw.
-static uint64_t secondsToNextWake() {
-  const time_t t = nowSeconds();
-  if (!clockValid()) return 60 * 60;
-  return 60 * 60 - (t % (60 * 60)) + 1;
-}
-
 [[noreturn]] static void sleepNow() {
   panel.powerOff();
   wifiOff();
-  const uint64_t seconds = secondsToNextWake();
-  Serial.printf("sleep: %llu s\n", seconds);
-  esp_sleep_enable_timer_wakeup(seconds * 1000000ULL);
+  // The screensaver doesn't change, so no timer: only a button wakes it.
+  Serial.println("sleep");
   // Pressing the wheel wakes it; Menu wakes it straight onto the next
   // screensaver. Wait for both to be let go, or waking on them would loop.
   const uint32_t start = millis();
@@ -184,33 +173,21 @@ static uint64_t secondsToNextWake() {
 static uint8_t greys[SCREEN_W * SCREEN_H];
 RTC_DATA_ATTR static int screensaverIndex;
 
-static void showScreensaver() {
+// Shows screensaver `which` (0 is Red Fuji), or the next one after the last
+// shown if which < 0.
+static void showScreensaver(int which = -1) {
 #ifdef HAVE_LOCAL_SCREENSAVERS
   const int locals = sizeof(LOCAL_SCREENSAVERS) / sizeof(LOCAL_SCREENSAVERS[0]);
 #else
   const int locals = 0;
 #endif
-  const int i = screensaverIndex % (1 + locals);
+  const int i = (which >= 0 ? which : screensaverIndex) % (1 + locals);
   if (i == 0) unpackRedFuji(greys);
 #ifdef HAVE_LOCAL_SCREENSAVERS
   else LOCAL_SCREENSAVERS[i - 1](greys);
 #endif
   screensaverIndex = (i + 1) % (1 + locals);
   panel.showGrey4(greys);
-  restingOnArt = true;
-}
-
-// A timer wake: redraw the moon (the date or phase may have changed) and
-// sleep again. Wi-Fi only comes on when the clock is due a resync.
-static void tick() {
-  if (restingOnArt) sleepNow();
-  if (!clockValid() || nowSeconds() - clockSyncedAt >= CLOCK_SYNC_S) {
-    if (wifiConnect(8000)) syncClockIfDue();
-    wifiOff();
-  }
-  page = REST_PAGE;
-  showPage();
-  sleepNow();
 }
 
 void setup() {
@@ -223,10 +200,8 @@ void setup() {
   rtc_gpio_deinit((gpio_num_t)MENU_PIN);
   buttonsBegin();
   panel.begin(fromSleep);
-  if (cause != ESP_SLEEP_WAKEUP_TIMER) restingOnArt = false;
 
   Serial.printf("wake: cause %d\n", (int)cause);
-  if (cause == ESP_SLEEP_WAKEUP_TIMER) tick();
   if (cause == ESP_SLEEP_WAKEUP_EXT1 && (esp_sleep_get_ext1_wakeup_status() & (1ULL << MENU_PIN))) {
     showScreensaver();  // Menu while asleep: straight to the next screensaver
     sleepNow();
@@ -256,11 +231,8 @@ void loop() {
   if (pressed != Button::None) wakeUntil = millis() + WAKE_MS;
 
   if ((int32_t)(wakeUntil - millis()) <= 0) {
-    // Done browsing: come to rest on the moon and sleep.
-    if (page != REST_PAGE) {
-      page = REST_PAGE;
-      showPage();
-    }
+    // Done browsing: come to rest on Red Fuji and sleep.
+    showScreensaver(0);
     sleepNow();
   }
 
@@ -275,8 +247,8 @@ void loop() {
       showPage();
       return;
     case Button::Menu:
-      // Sleep now, resting on the 4-grey screensaver instead of the moon.
-      showScreensaver();
+      // Sleep now, resting on Red Fuji.
+      showScreensaver(0);
       sleepNow();
     case Button::Press:
       page = 0;

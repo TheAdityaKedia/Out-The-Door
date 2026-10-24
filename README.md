@@ -7,11 +7,11 @@ A small e-ink display for the wall by the front door, running on an Elecrow Crow
 3. **Oblique Strategies**: a card of the day
 4. **Moon**: tonight's phase and the next full moon
 
-To save battery it sleeps almost all the time, resting on the moon screen, which it redraws once an hour. Press the wheel to wake it: it fetches fresh train times and weather, cycles through the screens every 15 seconds for five minutes (the wheel flips between them, and any button press restarts the five minutes), then returns to the moon and sleeps.
+To save battery it sleeps almost all the time, resting on a screensaver drawn in four greys (Hokusai's *Red Fuji*). Press the wheel to wake it: it fetches fresh train times and weather, cycles through the screens every 15 seconds for five minutes (the wheel flips between them, and any button press restarts the five minutes), then returns to Red Fuji and sleeps.
 
 **Battery:** a 3.7 V single-cell LiPo with a 2-pin JST SH 1.0 mm plug (check the polarity against the board). It charges over the board's USB-C at about 330 mA, so use 300 mAh or more; A 2000 mAh cell should last months, depending on how often you wake it.
 
-**Buttons:** scroll the wheel to flip screens by hand. Press the wheel to wake it or jump to fresh train times. Back returns to the trains screen. Menu puts it to sleep on a screensaver drawn in four greys until the wheel is pressed. It ships with Hokusai's *Red Fuji*; personal images can go in the git-ignored `art/local/screensavers.h`, and each press of Menu, even while it's asleep, shows the next one.
+**Buttons:** scroll the wheel to flip screens by hand. Press the wheel to wake it or jump to fresh train times. Back returns to the trains screen. Menu puts it to sleep on Red Fuji straight away. Personal screensaver images can go in the git-ignored `art/local/screensavers.h`; pressing Menu while it's asleep flips to the next one.
 
 ![The screens](previews/all_screens.png)
 
