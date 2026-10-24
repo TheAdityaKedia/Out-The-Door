@@ -265,6 +265,23 @@ void drawMoon(Adafruit_GFX &g, const Now &now) {
   pageDots(g, 3);
 }
 
+// Half a sun on the horizon at (cx, horizon y), about 15 px wide, with a
+// small arrow under the horizon: up for sunrise, down for sunset.
+static void sunIcon(Adafruit_GFX &g, int cx, int hy, bool up) {
+  g.drawFastHLine(cx - 8, hy, 17, INK);
+  for (int dy = 1; dy <= 4; dy++)
+    for (int dx = -4; dx <= 4; dx++)
+      if (dx * dx + dy * dy <= 18) g.drawPixel(cx + dx, hy - dy, INK);
+  for (int k = 1; k <= 3; k++) {
+    const double a = M_PI + k * M_PI / 4, c = cos(a), s = sin(a);
+    g.drawLine((int)lround(cx + 6 * c), (int)lround(hy + 6 * s), (int)lround(cx + 8 * c), (int)lround(hy + 8 * s), INK);
+  }
+  if (up)
+    g.fillTriangle(cx - 3, hy + 5, cx + 3, hy + 5, cx, hy + 2, INK);
+  else
+    g.fillTriangle(cx - 3, hy + 2, cx + 3, hy + 2, cx, hy + 5, INK);
+}
+
 void drawSunMoon(Adafruit_GFX &g, const Now &now, const CityConfig &where) {
   char buf[48];
   formatDayMonthDay(now, buf, sizeof buf);
@@ -292,15 +309,16 @@ void drawSunMoon(Adafruit_GFX &g, const Now &now, const CityConfig &where) {
       g.fillRect(bx0, by0, mx - bx0, by1 - by0 + 1, INK);
       g.fillTriangle(mx - 4, by0 - 4, mx + 4, by0 - 4, mx, by0 + 1, INK);
     }
-    // Small up/down arrows instead of words keep the line short.
-    const int ty = 34, ay = ty + 4;
+    const int ty = 34;
+    // Times without the a/p: sunrise is always morning, sunset evening.
     formatTime(makeNow((time_t)rise), buf, sizeof buf);
-    g.fillTriangle(bx0, ay + 3, bx0 + 6, ay + 3, bx0 + 3, ay - 1, INK);
-    drawText(g, SANS10, bx0 + 9, ty, buf, INK);
+    buf[strlen(buf) - 1] = 0;
+    sunIcon(g, bx0 + 8, ty + 7, true);
+    drawText(g, SANS10, bx0 + 20, ty + 1, buf, INK);
     formatTime(makeNow((time_t)set), buf, sizeof buf);
-    const int ax = bx1 - textWidth(SANS10, buf) - 9;
-    g.fillTriangle(ax, ay - 1, ax + 6, ay - 1, ax + 3, ay + 3, INK);
-    drawTextRight(g, SANS10, bx1, ty, buf, INK);
+    buf[strlen(buf) - 1] = 0;
+    sunIcon(g, bx1 - textWidth(SANS10, buf) - 12, ty + 7, false);
+    drawTextRight(g, SANS10, bx1, ty + 1, buf, INK);
   }
 
   // Bottom: the moon, its phase, and the next full (or new) moon.
