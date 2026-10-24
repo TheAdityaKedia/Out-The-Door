@@ -120,7 +120,7 @@ static void draw(int which) {
       drawOblique(canvas, now, cardForDay(now.localDays));
       break;
     default:
-      drawMoon(canvas, now);
+      drawSunMoon(canvas, now, CITIES[0]);
       break;
   }
 }

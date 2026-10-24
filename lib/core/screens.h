@@ -24,5 +24,7 @@ void drawWeather(Adafruit_GFX &g, const Now &now, const CityConfig *config, cons
 // page < 0 hides the page dots (quiet hours).
 void drawOblique(Adafruit_GFX &g, const Now &now, const char *card, int page = 2);
 void drawMoon(Adafruit_GFX &g, const Now &now);
+// Day length and sunrise/sunset at where, with the moon below.
+void drawSunMoon(Adafruit_GFX &g, const Now &now, const CityConfig &where);
 // Shown while the board starts up.
 void drawSplash(Adafruit_GFX &g, const char *line);
