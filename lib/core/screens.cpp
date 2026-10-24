@@ -265,6 +265,58 @@ void drawMoon(Adafruit_GFX &g, const Now &now) {
   pageDots(g, 3);
 }
 
+void drawSunMoon(Adafruit_GFX &g, const Now &now, const CityConfig &where) {
+  char buf[48];
+  formatDayMonthDay(now, buf, sizeof buf);
+  header(g, "Sun & Moon", buf);
+  g.drawFastHLine(4, 68, CONTENT_R - 3, INK);
+
+  // Top: day length, and a bar from sunrise to sunset with now marked on it,
+  // drawn like the weather screen's low-to-high bar.
+  drawText(g, BOLD12, 4, 20, "Daylight", INK);
+  long rise, set;
+  if (!sunTimes(now.localDays, where.lat, where.lon, &rise, &set)) {
+    drawText(g, BOLD26, 4, 34, "--", INK);
+  } else {
+    const long mins = (set - rise + 30) / 60;
+    snprintf(buf, sizeof buf, "%ldh %ldm", mins / 60, mins % 60);
+    drawText(g, BOLD26, 4, 34, buf, INK);
+
+    const int bx0 = 140, bx1 = CONTENT_R - 2, by0 = 24, by1 = 31;
+    g.drawRect(bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, INK);
+    if (now.epoch > rise && now.epoch < set) {
+      const int mx = bx0 + (int)((now.epoch - rise) * (bx1 - bx0) / (set - rise));
+      g.fillRect(bx0, by0, mx - bx0, by1 - by0 + 1, INK);
+      g.fillTriangle(mx - 4, by0 - 4, mx + 4, by0 - 4, mx, by0 + 1, INK);
+    }
+    // Small up/down arrows instead of words keep the line short.
+    const int ty = 34, ay = ty + 4;
+    formatTime(makeNow((time_t)rise), buf, sizeof buf);
+    g.fillTriangle(bx0, ay + 3, bx0 + 6, ay + 3, bx0 + 3, ay - 1, INK);
+    drawText(g, SANS10, bx0 + 9, ty, buf, INK);
+    formatTime(makeNow((time_t)set), buf, sizeof buf);
+    const int ax = bx1 - textWidth(SANS10, buf) - 9;
+    g.fillTriangle(ax, ay - 1, ax + 6, ay - 1, ax + 3, ay + 3, INK);
+    drawTextRight(g, SANS10, bx1, ty, buf, INK);
+  }
+
+  // Bottom: the moon, its phase, and the next full (or new) moon.
+  const double age = moonAge(now.utcDays);
+  moonDisc(g, 25, 95, 20, age);
+  const char *name = moonPhaseName(age);
+  drawText(g, BOLD14, 56, 76, name, INK);
+  snprintf(buf, sizeof buf, "%d%% lit", (int)lround(moonIllumination(age) * 100));
+  drawText(g, SANS10, 56, 100, buf, INK);
+  const bool full = strcmp(name, "Full Moon") == 0;
+  const double ahead = full ? fmod(SYNODIC_MONTH - age, SYNODIC_MONTH) : daysUntilFull(age);
+  const Now then = makeNow((time_t)(now.epoch + (long)(ahead * 86400)));
+  char day[24];
+  formatDayMonthDay(then, day, sizeof day);
+  snprintf(buf, sizeof buf, "%s %s", full ? "New" : "Full", day);
+  drawTextRight(g, SANS10, CONTENT_R - 2, 100, buf, INK);
+  pageDots(g, 3);
+}
+
 void drawSplash(Adafruit_GFX &g, const char *line) {
   drawTextCenter(g, BOLD14, SCREEN_W / 2, 40, "out the door", INK);
   drawTextCenter(g, SANS11, SCREEN_W / 2, 64, line, INK);

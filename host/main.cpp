@@ -105,6 +105,11 @@ static void checkMoon() {
   CHECK(moonIllumination(age) > 0.99);
   const double crescent = moonAge(utc(2026, 10, 14, 14, 42) / 86400.0);
   CHECK(std::string(moonPhaseName(crescent)) == "Waxing Crescent");
+  // Oakland on 2026-10-14: sunrise about 7:15 am, sunset about 6:33 pm PDT.
+  long rise, set;
+  CHECK(sunTimes(makeNow(utc(2026, 10, 14, 19, 0)).localDays, 37.8044, -122.2712, &rise, &set));
+  CHECK(labs(rise - utc(2026, 10, 14, 14, 15)) < 4 * 60);
+  CHECK(labs(set - utc(2026, 10, 15, 1, 33)) < 4 * 60);
 }
 
 static void writePbm(const GFXcanvas1 &c, const std::string &path) {
@@ -157,7 +162,8 @@ int main(int argc, char **argv) {
   preview(out, "1_trains", [&](Adafruit_GFX &g) { drawTrains(g, now, trains(0, true)); });
   preview(out, "2_weather", [&](Adafruit_GFX &g) { drawWeather(g, now, CITIES, cities); });
   preview(out, "3_oblique", [&](Adafruit_GFX &g) { drawOblique(g, now, card); });
-  preview(out, "4_moon", [&](Adafruit_GFX &g) { drawMoon(g, now); });
+  preview(out, "4_moon", [&](Adafruit_GFX &g) { drawSunMoon(g, now, CITIES[0]); });
+  preview(out, "4b_sun_moon_night", [&](Adafruit_GFX &g) { drawSunMoon(g, makeNow(utc(2026, 10, 15, 5, 0)), CITIES[0]); });
   preview(out, "5_trains_stale", [&](Adafruit_GFX &g) { drawTrains(g, now, trains(4 * 60, true)); });
   preview(out, "6_trains_none", [&](Adafruit_GFX &g) { drawTrains(g, now, trains(0, false)); });
   preview(out, "7_oblique_long", [&](Adafruit_GFX &g) {
