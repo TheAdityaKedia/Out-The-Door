@@ -284,7 +284,10 @@ void drawSunMoon(Adafruit_GFX &g, const Now &now, const CityConfig &where) {
 
     const int bx0 = 140, bx1 = CONTENT_R - 2, by0 = 24, by1 = 31;
     g.drawRect(bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, INK);
-    if (now.epoch > rise && now.epoch < set) {
+    // Fills as the day goes: empty before sunrise, full after sunset.
+    if (now.epoch >= set) {
+      g.fillRect(bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, INK);
+    } else if (now.epoch > rise) {
       const int mx = bx0 + (int)((now.epoch - rise) * (bx1 - bx0) / (set - rise));
       g.fillRect(bx0, by0, mx - bx0, by1 - by0 + 1, INK);
       g.fillTriangle(mx - 4, by0 - 4, mx + 4, by0 - 4, mx, by0 + 1, INK);

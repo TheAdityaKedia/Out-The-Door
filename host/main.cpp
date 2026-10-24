@@ -163,6 +163,7 @@ int main(int argc, char **argv) {
   preview(out, "2_weather", [&](Adafruit_GFX &g) { drawWeather(g, now, CITIES, cities); });
   preview(out, "3_oblique", [&](Adafruit_GFX &g) { drawOblique(g, now, card); });
   preview(out, "4_moon", [&](Adafruit_GFX &g) { drawSunMoon(g, now, CITIES[0]); });
+  preview(out, "4a_sun_moon_afternoon", [&](Adafruit_GFX &g) { drawSunMoon(g, makeNow(utc(2026, 10, 14, 22, 0)), CITIES[0]); });
   preview(out, "4b_sun_moon_night", [&](Adafruit_GFX &g) { drawSunMoon(g, makeNow(utc(2026, 10, 15, 5, 0)), CITIES[0]); });
   preview(out, "5_trains_stale", [&](Adafruit_GFX &g) { drawTrains(g, now, trains(4 * 60, true)); });
   preview(out, "6_trains_none", [&](Adafruit_GFX &g) { drawTrains(g, now, trains(0, false)); });
