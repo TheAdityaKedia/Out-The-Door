@@ -120,26 +120,40 @@ body=toF(gw.cut(groove))
 for px in(-11.15,11.15):
     bp=P(px,-3.35,-30.3)
     body=body.cut(Part.makeCylinder(0.8,20,V(bp.x,bp.y,bp.z),V(1,0,0)))
-# ---------- board supports: stop the CrowPanel moving backwards ----------
-# The front (lens or bevel insert) stops it moving forward; these touch the back of the board.
-# Two flat posts on the board's far corners; two ribs at the wheel end
-# (those corner holes sit under the MENU/BACK buttons).
-far=10.0  # depth the supports run back to (merged into the back wall)
-sup=[]
-for px in (-14.6,14.6):
-    c=P(px,-2.1,30.6); post=Part.makeCylinder(1.8,40,V(c.x,c.y,c.z),V(0,1,0))
-    pin=Part.makeCylinder(0.85,1.5,V(c.x,c.y-1.5,c.z),V(0,1,0))
-    sup.append(post)
-    r=P(px,-2.1,-24.5); sup.append(Part.makeBox(2.0,40,2.0,V(r.x-1.0,r.y,r.z-1.0)))
-supports=sup[0]
-for x_ in sup[1:]: supports=supports.fuse(x_)
-supports=supports.common(inner)
-body=body.fuse(supports)
+# ---------- Kindle-style corner snaps (replaces back-wall posts) ----------
+# Near each corner: a springy arm beside the board edge with a hook that snaps over the 1 mm bare
+# margin on the board's front face, plus a small shelf under the board's back. Both hang off the
+# top/bottom walls. The board pushes in from the front; the arms flex out and click over it.
+outerF=toF(ow)
+PB=-1.6                      # board back face (panel y) at the edges
+ARM_T,CLR,HOOK,LIP=1.2,0.15,0.6,0.6
+yF,yB=fy(0),fy(PB)           # board front / back face in F
+ROOT=12.0                    # arm root depth (F y): long arm, low strain
+snaps=[]
+def zbox(x0,x1,y0,y1,z0,z1): return Part.makeBox(x1-x0,y1-y0,z1-z0,V(min(x0,x1),y0,z0))
+for sz in (-1,1):
+    for (a0,a1),(t0,t1) in [((24.5,28.5),(29.4,31.4)),((-30.0,-26.0),(-25.5,-23.5))]:
+        x0,x1=sorted((-a0+CX,-a1+CX))
+        e=15.6+CLR                       # board edge clearance plane |z|
+        arm=zbox(x0,x1,yF-LIP,ROOT,e,e+ARM_T)
+        bridge=zbox(x0,x1,ROOT,ROOT+2.0,e,30)
+        # hook: catch face at board front, ramp forward to the arm face
+        tri=Part.Face(Part.makePolygon([V(x0,yF,e),V(x0,yF,e-HOOK-CLR),V(x0,yF-LIP,e),V(x0,yF,e)])).extrude(V(x1-x0,0,0))
+        u=arm.fuse(bridge).fuse(tri)
+        tx0,tx1=sorted((-t0+CX,-t1+CX))
+        tab=zbox(tx0,tx1,yB,yB+1.5,15.6-1.0,30)
+        u=u.fuse(tab)
+        if sz<0: u=u.mirror(V(0,0,0),V(0,0,1))
+        snaps.append(u)
+supports=snaps[0]
+for x_ in snaps[1:]: supports=supports.fuse(x_)
+supports=supports.common(outerF)
+body=body.fuse(supports).removeSplitter()
 for x in pnF.Solids:
     if x.BoundBox.intersect(supports.BoundBox):
         v=supports.common(x).Volume
         if v>0.01: print("support hits",round(v,2),x.BoundBox)
-print("support x bat",round(supports.common(bat).Volume,2) if 'bat' in dir() else 'n/a')
+print("support x bat",round(supports.common(bat).Volume,2),"support x knob",round(supports.common(knob).Volume,2))
 print("body valid",body.isValid())
 # ---------- checks ----------
 cav=inner
