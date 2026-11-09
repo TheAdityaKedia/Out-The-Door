@@ -71,10 +71,13 @@ secs=[rr_wire(ow_+(iw_-ow_)*t, oh_+(ih_-oh_)*t, or_+(ir_-or_)*t, LENS*t**1.6) fo
 slope=Part.makeLoft(secs,True,False)
 bcut=slope.fuse(Part.Face(rr_wire(iw_,ih_,ir_,LENS)).extrude(V(0,1.0,0))).fuse(Part.Face(rr_wire(ow_+2,oh_+2,or_+1,-1)).extrude(V(0,1.0,0)))
 bevel=lens.cut(bcut)
-# friction bumps: 4 short ridges on the insert's top and bottom edges, 0.25 mm proud (0.15 mm interference)
+# friction ridges: 0.45 mm proud (0.35 mm interference with the 0.1 mm pocket gap); 4 on top/bottom, 2 on the ends
+RP=0.45
 for bx in (-16.0,16.0):
     for sz in (-1,1):
-        bevel=bevel.fuse(Part.makeCylinder(0.6,6,V(bx-3,LENS/2,sz*(oh_/2-0.35)),V(1,0,0)))
+        bevel=bevel.fuse(Part.makeCylinder(0.6,6,V(bx-3,LENS/2,sz*(oh_/2-0.6+RP)),V(1,0,0)))
+for sx in (-1,1):
+    bevel=bevel.fuse(Part.makeCylinder(0.6,8,V(sx*(ow_/2-0.6+RP),LENS/2,-4),V(0,0,1)))
 bevel=bevel.removeSplitter()
 print("bevel valid",bevel.isValid(),round(bevel.Volume,1))
 zb=-H/2
@@ -140,15 +143,36 @@ for sz in (-1,1):
         # hook: catch face at board front, ramp forward to the arm face
         tri=Part.Face(Part.makePolygon([V(x0,yF,e),V(x0,yF,e-HOOK-CLR),V(x0,yF-LIP,e),V(x0,yF,e)])).extrude(V(x1-x0,0,0))
         u=arm.fuse(bridge).fuse(tri)
-        tx0,tx1=sorted((-t0+CX,-t1+CX))
-        tab=zbox(tx0,tx1,yB,yB+1.5,15.6-1.0,30)
-        u=u.fuse(tab)
         if sz<0: u=u.mirror(V(0,0,0),V(0,0,1))
         snaps.append(u)
+# back stops: continuous ledges along both long walls under the board's back edge (1 mm overlap),
+# with a 45 deg gusset to the wall so they print without supports (body prints back-down)
+LT,OV=1.2,1.0
+for sz in (-1,1):
+    for xa,xb in [(-34.0,-31.6),(-26.6,22.9)]:
+        tri=Part.Face(Part.makePolygon([V(xa,yB,15.6-OV),V(xa,yB+LT,15.6-OV),V(xa,yB+LT+6.0,21.6-OV),V(xa,yB,21.6-OV+6),V(xa,yB,15.6-OV)])).extrude(V(xb-xa,0,0))
+        led=tri.fuse(zbox(xa,xb,yB,yB+LT,15.6-OV,30)).fuse(zbox(xa,xb,yB,yB+LT+6.0,21.6-OV,30))
+        if sz<0: led=led.mirror(V(0,0,0),V(0,0,1))
+        for x in pnF.Solids:     # notch around parts on the board's back near the edge
+            if x.Volume<3000 and x.BoundBox.intersect(led.BoundBox) and led.common(x).Volume>0.001:
+                bb=x.BoundBox; led=led.cut(Part.makeBox(bb.XLength+1.0,40,bb.ZLength+1.0,V(bb.XMin-0.5,0,bb.ZMin-0.5)))
+        snaps.append(led)
+# end stops: ribs from the back wall that touch the board's short edges (0.15 mm gap), so it can't slide sideways.
+# Far end: one wide rib. Wheel end: two ribs beside the wheel housing, clear of the drum (|z| 10..14).
+xFar=-31.6+CX-CLR; xWheel=31.6+CX+CLR
+for sz in (-1,1):   # far end: two corner ribs, middle left open for the panel's flat cable that wraps round this end
+    snaps.append(zbox(-40,xFar,yF-0.4,40,(10.5 if sz>0 else -14.5),(14.5 if sz>0 else -10.5)))
+for sz in (-1,1):
+    z0,z1=(10,14) if sz>0 else (-14,-10)
+    snaps.append(zbox(xWheel,xWheel+1.6,yF-0.4,yB+0.8,z0,z1))      # touches the PCB end, in front of the button plungers
+    snaps.append(zbox(30.2,31.8,yF-0.4,40,z0,z1))                   # back to the wall, beyond the plungers
 supports=snaps[0]
 for x_ in snaps[1:]: supports=supports.fuse(x_)
 supports=supports.common(outerF)
 body=body.fuse(supports).removeSplitter()
+for px in(-11.15,11.15):   # re-open the button pin holes through the end stops
+    bp=P(px,-3.35,-30.3)
+    body=body.cut(Part.makeCylinder(0.8,20,V(bp.x,bp.y,bp.z),V(1,0,0)))
 for x in pnF.Solids:
     if x.BoundBox.intersect(supports.BoundBox):
         v=supports.common(x).Volume
