@@ -93,7 +93,8 @@ def P(px,py,pz): return PM.multVec(V(px,py,pz))
 # A hub (r 4) presses on that sliver; a bigger drum on the same axle juts out of the right side.
 fy=lambda py:-py+OY
 WC=P(0,0,-27)
-AX=P(0,0,-27-7.3-4+0.2)          # axle centre, 0.2 mm preload into the wheel teeth
+AX=P(0,0,-27-7.3-4+1.85)         # axle centre, 1.85 mm nominal into the wheel: the springy arm takes up the
+                                  # real-world error (test print missed by ~1.3 mm) and keeps the hub pressed on
 ax=V(0,1,0)
 def cyl(r,y0,y1,c=AX): return Part.makeCylinder(r,y1-y0,V(c.x,y0,c.z),ax)
 hub=cyl(4.0,fy(-2.1),fy(-3.5))
@@ -104,8 +105,9 @@ for i in range(60):
     drum=drum.cut(Part.makeCylinder(0.4,10,V(AX.x+RD*math.cos(a_),fy(-4.2)-1,AX.z+RD*math.sin(a_)),ax))
 # drum spins on a separate 3 mm pin (assembly: drum goes in sideways through the wall window,
 # then the pin is pushed in from the front, through the drum, into a press-fit hole in the post)
-knob=hub.fuse(spacer).fuse(drum).removeSplitter().cut(cyl(1.75,fy(-2.1)-1,fy(-9.5)+1))
-pin=cyl(1.5,fy(-2.1),fy(-9.5)+11.5)
+knob=hub.fuse(spacer).fuse(drum).removeSplitter().cut(cyl(1.65,fy(-2.1)-1,fy(-9.5)+1))   # 3.3 mm bore: less wobble
+YDB=fy(-9.5)                     # drum back face
+pin=cyl(1.5,fy(-2.1),YDB+7.5).fuse(cyl(2.0,fy(-2.1)-0.7,fy(-2.1)))   # 3 mm pin with a 4 mm head that keeps the drum on the wheel
 axle=pin
 # slot in the right wall for hub + drum (0.8 mm radial, 0.5 mm axial clearance)
 slot=cyl(RD+0.8,fy(-2.1)-0.5,fy(-9.5)+0.5)
@@ -113,10 +115,13 @@ body=body.cut(slot)
 # straight-sided window through the right wall so the 18 mm drum can be passed in edge-first
 win=Part.makeBox(20,fy(-9.5)-fy(-2.1)+1.0,19.2,V(AX.x,fy(-2.1)-0.5,AX.z-9.6))
 body=body.cut(win)
-# axle post from the back wall, with a hole slotted 1.2 mm toward the wheel so a press clicks it
-post=cyl(3.4,fy(-9.5)+0.6,fy(-9.5)+40).common(inner.common(Part.makeBox(200,200,200,V(-100,-100,-100))))
-hole=cyl(1.6,fy(-9.5),fy(-9.5)+12)    # 3.2 mm: printed holes shrink, gives a snug push fit for the 3 mm pin
-body=body.fuse(post).cut(hole)
+# springy axle mount: a boss right behind the drum (0.2 mm gap, so the drum can't slide back off the wheel)
+# hung from the top wall on a thin arm that flexes sideways. The arm pushes the hub into the wheel;
+# pushing the drum bends it further and clicks the wheel's button.
+boss=cyl(2.6,YDB+0.2,YDB+8.2)
+sarm=Part.makeBox(1.2,5.0,30,V(AX.x-0.6,YDB+3.2,AX.z+2.0)).common(toF(ow))
+hole=cyl(1.6,YDB,YDB+7.7)        # 3.2 mm: prints undersize, snug push fit for the 3 mm pin
+body=body.fuse(boss.fuse(sarm)).cut(hole)
 # ---------- battery (103040, ~1500 mAh) ----------
 bat=Part.makeBox(40,10,30,V(-29.0,fy(-9.8)+0.6,-15))
 # ---------- USB-C tunnel through base + cable groove ----------
@@ -166,7 +171,7 @@ for sz in (-1,1):
         snaps.append(led)
 # end stops: ribs from the back wall that touch the board's short edges (0.15 mm gap), so it can't slide sideways.
 # Far end: one wide rib. Wheel end: two ribs beside the wheel housing, clear of the drum (|z| 10..14).
-xFar=-31.6+CX-CLR; xWheel=31.6+CX+CLR
+xFar=-31.6+CX-0.05; xWheel=31.6+CX+CLR
 for sz in (-1,1):   # far end: two corner ribs, middle left open for the panel's flat cable that wraps round this end
     snaps.append(zbox(-40,xFar,yF-0.4,40,(10.5 if sz>0 else -14.5),(14.5 if sz>0 else -10.5)))
 for sz in (-1,1):
@@ -200,6 +205,7 @@ for x in solids:
         if v>0.01: print("knob hits", round(v,2), x.BoundBox)
 print("pin path from front x body:",vol(cyl(1.6,-3,fy(-2.1)),body),"pin x body (should be ~press):",vol(pin,body))
 print("tunnel x body:",vol(tun,body)); print("bevel x panel:",round(sum(bevel.common(x).Volume for x in pnF.Solids if bevel.BoundBox.intersect(x.BoundBox)),3))
+print("boss to right wall gap:", round(min(f.distToShape(boss)[0] for f in [Part.makeBox(1,40,10,V(38.2,YDB,-5))]),2)); print("arm length:",round(sarm.BoundBox.ZLength,1), sarm.BoundBox, "vol",round(sarm.Volume,1)); print("pinhead vs wheel x:", round(pin.BoundBox.XMax,2), "drum front y", round(pin.BoundBox.YMin,2)); print("pin len",round(pin.BoundBox.YLength,2),"hole depth 7.7")
 print("knob x body:",vol(knob,body),"bat x body:",vol(bat,body),"bat x panel:",round(sum(bat.common(x).Volume for x in solids if bat.BoundBox.intersect(x.BoundBox)),2))
 print("panel x body:",round(sum(body.common(x).Volume for x in solids if body.BoundBox.intersect(x.BoundBox)),2))
 print("panel x lens:",round(sum(lens.common(x).Volume for x in solids if lens.BoundBox.intersect(x.BoundBox)),2))
