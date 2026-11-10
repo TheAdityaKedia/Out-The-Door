@@ -101,14 +101,20 @@ RD=9.0; drum=cyl(RD,fy(-4.2),fy(-9.5))
 for i in range(60):
     a_=2*math.pi*i/60
     drum=drum.cut(Part.makeCylinder(0.4,10,V(AX.x+RD*math.cos(a_),fy(-4.2)-1,AX.z+RD*math.sin(a_)),ax))
-axle=cyl(1.5,fy(-9.5),fy(-9.5)+11)
-knob=hub.fuse(spacer).fuse(drum).fuse(axle).removeSplitter()
+# drum spins on a separate 3 mm pin (assembly: drum goes in sideways through the wall window,
+# then the pin is pushed in from the front, through the drum, into a press-fit hole in the post)
+knob=hub.fuse(spacer).fuse(drum).removeSplitter().cut(cyl(1.75,fy(-2.1)-1,fy(-9.5)+1))
+pin=cyl(1.5,fy(-2.1),fy(-9.5)+11.5)
+axle=pin
 # slot in the right wall for hub + drum (0.8 mm radial, 0.5 mm axial clearance)
 slot=cyl(RD+0.8,fy(-2.1)-0.5,fy(-9.5)+0.5)
 body=body.cut(slot)
+# straight-sided window through the right wall so the 18 mm drum can be passed in edge-first
+win=Part.makeBox(20,fy(-9.5)-fy(-2.1)+1.0,19.2,V(AX.x,fy(-2.1)-0.5,AX.z-9.6))
+body=body.cut(win)
 # axle post from the back wall, with a hole slotted 1.2 mm toward the wheel so a press clicks it
 post=cyl(3.4,fy(-9.5)+0.6,fy(-9.5)+40).common(inner.common(Part.makeBox(200,200,200,V(-100,-100,-100))))
-hole=cyl(1.65,fy(-9.5),fy(-9.5)+12).fuse(cyl(1.65,fy(-9.5),fy(-9.5)+12,AX+V(-1.2,0,0))).fuse(Part.makeBox(1.2,12,3.3,V(AX.x-1.2,fy(-9.5),AX.z-1.65)))
+hole=cyl(1.45,fy(-9.5),fy(-9.5)+12)   # press fit for the 3 mm pin
 body=body.fuse(post).cut(hole)
 # ---------- battery (103040, ~1500 mAh) ----------
 bat=Part.makeBox(40,10,30,V(-29.0,fy(-9.8)+0.6,-15))
@@ -189,6 +195,7 @@ for x in solids:
     if knob.BoundBox.intersect(x.BoundBox):
         v=knob.common(x).Volume
         if v>0.01: print("knob hits", round(v,2), x.BoundBox)
+print("pin path from front x body:",vol(cyl(1.6,-3,fy(-2.1)),body),"pin x body (should be ~press):",vol(pin,body))
 print("knob x body:",vol(knob,body),"bat x body:",vol(bat,body),"bat x panel:",round(sum(bat.common(x).Volume for x in solids if bat.BoundBox.intersect(x.BoundBox)),2))
 print("panel x body:",round(sum(body.common(x).Volume for x in solids if body.BoundBox.intersect(x.BoundBox)),2))
 print("panel x lens:",round(sum(lens.common(x).Volume for x in solids if lens.BoundBox.intersect(x.BoundBox)),2))
@@ -196,11 +203,11 @@ kb=toW(knob).BoundBox; bb=toW(body).BoundBox
 print("world body bbox %.1f x %.1f x %.1f"%(bb.XLength,bb.YLength,bb.ZLength),"knob juts %.1f mm"%(kb.XMax-bb.XMax))
 # ---------- save ----------
 if not os.environ.get("CHECK"):
-    for n,sh in [('body',body),('front_lens',lens),('front_bevel',bevel),('orange_wheel_cap',knob)]:
+    for n,sh in [('body',body),('front_lens',lens),('front_bevel',bevel),('orange_wheel_cap',knob),('latch_pin',pin)]:
         w=toW(sh); w.exportStep(OUT+n+'.step')
         import Mesh; m=Mesh.Mesh(); m.addFacets(w.tessellate(0.03)); m.write(OUT+n+'.stl')
     import pickle
-    for n,sh in [('body',body),('lens',lens),('bevel',bevel),('knob',knob),('bat',bat),('panel',pnF)]:
+    for n,sh in [('body',body),('lens',lens),('bevel',bevel),('knob',knob),('pin',pin),('bat',bat),('panel',pnF)]:
         sh.exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/ccF_'+n+'.brep')
         toW(sh).exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/cc_'+n+'.brep')
     print("SAVED")
