@@ -105,7 +105,7 @@ for i in range(60):
     drum=drum.cut(Part.makeCylinder(0.4,10,V(AX.x+RD*math.cos(a_),fy(-4.2)-1,AX.z+RD*math.sin(a_)),ax))
 # drum spins on a separate 3 mm pin (assembly: drum goes in sideways through the wall window,
 # then the pin is pushed in from the front, through the drum, into a press-fit hole in the post)
-knob=hub.fuse(spacer).fuse(drum).removeSplitter().cut(cyl(1.65,fy(-2.1)-1,fy(-9.5)+1))   # 3.3 mm bore: less wobble
+knob=hub.fuse(spacer).fuse(drum).removeSplitter().cut(cyl(1.8,fy(-2.1)-1,fy(-9.5)+1))   # 3.6 mm bore: prints ~3.3-3.4, spins free on the 3 mm pin
 YDB=fy(-9.5)                     # drum back face
 pin=cyl(1.5,fy(-2.1),YDB+7.5).fuse(cyl(2.0,fy(-2.1)-0.7,fy(-2.1)))   # 3 mm pin with a 4 mm head that keeps the drum on the wheel
 axle=pin
@@ -118,9 +118,9 @@ body=body.cut(win)
 # springy axle mount: a boss right behind the drum (0.2 mm gap, so the drum can't slide back off the wheel)
 # hung from the top wall on a thin arm that flexes sideways. The arm pushes the hub into the wheel;
 # pushing the drum bends it further and clicks the wheel's button.
-boss=cyl(2.6,YDB+0.2,YDB+8.2)
+boss=cyl(2.6,YDB+0.3,YDB+8.2)   # 0.3 mm behind the drum
 sarm=Part.makeBox(1.2,5.0,30,V(AX.x-0.6,YDB+3.2,AX.z+2.0)).common(toF(ow))
-hole=cyl(1.6,YDB,YDB+7.7)        # 3.2 mm: prints undersize, snug push fit for the 3 mm pin
+hole=cyl(1.6,YDB,YDB+7.2)        # pin bottoms out here, leaving its head 0.3 mm off the drum (no clamping);        # 3.2 mm: prints undersize, snug push fit for the 3 mm pin
 body=body.fuse(boss.fuse(sarm)).cut(hole)
 # ---------- battery (103040, ~1500 mAh) ----------
 bat=Part.makeBox(40,10,30,V(-29.0,fy(-9.8)+0.6,-15))
