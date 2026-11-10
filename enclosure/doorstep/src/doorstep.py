@@ -66,7 +66,7 @@ body,lens,inner=toF(bw),toF(lensw),toF(iw)
 # from the seam down to a window 0.3 mm inside the active area at its back face
 AAW,AAH=48.54,23.70
 ow_,oh_,or_=W-2*RF-0.2,H-2*RF-0.2,RC-RF-0.1
-iw_,ih_,ir_=AAW-0.6,AAH-0.6,0.8
+iw_,ih_,ir_=AAW,AAH,0.8   # window flush with the screen's live area
 SE=LENS
 secs=[rr_wire(ow_+(iw_-ow_)*t, oh_+(ih_-oh_)*t, or_+(ir_-or_)*t, SE*t**1.6) for t in (0.0,0.2,0.4,0.6,0.8,1.0)]
 slope=Part.makeLoft(secs,True,False)
@@ -78,8 +78,9 @@ for bx in ():
     for sz in (-1,1):
         bevel=bevel.fuse(Part.makeCylinder(0.6,6,V(bx-3,LENS/2,sz*(oh_/2-0.6+RP)),V(1,0,0)))
 # continuous groove in the plate's back (1.0 wide, 1.0 deep, 0.5 mm in from its edge) takes the body's tongue
-GRV=Part.Face(rr_wire(ow_-1.0,oh_-1.0,or_-0.5,LENS-1.0)).extrude(V(0,1.1,0)).cut(Part.Face(rr_wire(ow_-3.0,oh_-3.0,or_-1.5,LENS-1.0)).extrude(V(0,1.1,0)))
-bevel=bevel.cut(GRV)
+# continuous lip on the plate's back (0.8 thick, 0.95 tall, flush with its outer edge) goes into the body's groove
+LIPR=Part.Face(rr_wire(ow_,oh_,or_,LENS)).extrude(V(0,0.95,0)).cut(Part.Face(rr_wire(ow_-1.6,oh_-1.6,or_-0.8,LENS)).extrude(V(0,0.95,0)))
+bevel=bevel.fuse(LIPR).removeSplitter()
 bevel=bevel.removeSplitter()
 print("bevel valid",bevel.isValid(),round(bevel.Volume,1))
 zb=-H/2
@@ -118,7 +119,7 @@ axle=pin
 slot=cyl(RD+0.8,fy(-4.2)-0.5,fy(-9.5)+0.5).fuse(cyl(4.6,fy(-2.1)-0.5,fy(-4.2)-0.5))
 body=body.cut(slot)
 # straight-sided window through the right wall so the 18 mm drum can be passed in edge-first
-win=Part.makeBox(20,fy(-9.5)-fy(-4.2)+1.0,18.0,V(AX.x,fy(-4.2)-0.5,AX.z-9.0)).fuse(Part.makeBox(20,fy(-4.2)-fy(-2.1),9.2,V(AX.x,fy(-2.1)-0.5,AX.z-4.6)))
+win=Part.makeBox(20,fy(-9.5)-fy(-4.2)+1.0,18.0,V(AX.x,fy(-4.2)-0.5,AX.z-9.0)).fuse(Part.makeBox(39.55-AX.x,fy(-4.2)-fy(-2.1),9.2,V(AX.x,fy(-2.1)-0.5,AX.z-4.6)))   # hub pocket stops 0.45 mm short of the outside
 body=body.cut(win)
 # springy axle mount: a boss right behind the drum (0.2 mm gap, so the drum can't slide back off the wheel)
 # hung from the top wall on a thin arm that flexes sideways. The arm pushes the hub into the wheel;
@@ -131,11 +132,11 @@ body=body.fuse(boss.fuse(sarm)).cut(hole)
 bat=Part.makeBox(40,10,30,V(-29.0,fy(-9.8)+0.6,-15))
 # ---------- USB-C tunnel through base + cable groove ----------
 uc=P(15.6,-2.71,0.6)
-tun=Part.makeBox(13,7.5,30,V(uc.x-6.5,uc.y-3.75,uc.z-30))
+tun=Part.makeBox(10.5,7.5,30,V(uc.x-5.25,uc.y-3.75,uc.z-30))   # plain opening for a straight USB-C plug from below
 body=body.cut(tun)
 gw=toW(body); gb=gw.BoundBox
 groove=Part.makeBox(5.5,60,3.2,V(toW(Part.Vertex(uc)).Point.x-2.75,toW(Part.Vertex(uc)).Point.y,zb-1))
-body=toF(gw.cut(groove))
+body=toF(gw)
 # ---------- button pin-holes (MENU/EXIT) on right end ----------
 for px in(-11.15,11.15):
     bp=P(px,-3.35,-30.3)
@@ -198,10 +199,13 @@ for sz in (-1,1):
 # seat: ledge round the mouth 2 mm behind the face (the plate rests on it, so it always sits flush),
 # 45 deg chamfer underneath (prints back-down without supports); continuous tongue on it for the plate's groove
 PW,PH,PR=W-2*RF,H-2*RF,RC-RF                 # pocket outline 74 x 38 r 6
-seat=Part.Face(rr_wire(PW+6,PH+6,PR+3,LENS)).extrude(V(0,3.5,0)).cut(Part.makeLoft([rr_wire(PW-3.8,PH-3.8,PR-1.9,LENS-0.01),rr_wire(PW-3.8,PH-3.8,PR-1.9,LENS+0.3),rr_wire(PW+2.6,PH+2.6,PR+1.3,LENS+3.5)],True,True))
-tng=Part.Face(rr_wire(PW-1.4,PH-1.4,PR-0.7,LENS-0.9)).extrude(V(0,0.95,0)).cut(Part.Face(rr_wire(PW-3.0,PH-3.0,PR-1.5,LENS-0.9)).extrude(V(0,0.95,0)))
-pcut=Part.Shape(cyl(2.4,-3,fy(-2.1)))      # notch seat + tongue so the pin's 4 mm head can be pushed in from the front
-snaps.append(seat.fuse(tng).cut(pcut))
+seat=Part.Face(rr_wire(PW+6,PH+6,PR+3,LENS)).extrude(V(0,4.0,0)).cut(Part.makeLoft([rr_wire(PW-3.8,PH-3.8,PR-1.9,LENS-0.01),rr_wire(PW-3.8,PH-3.8,PR-1.9,LENS+0.6),rr_wire(PW+3.4,PH+3.4,PR+1.7,LENS+4.0)],True,True))
+pcut=Part.Shape(cyl(2.4,-3,fy(-2.1)))      # notch the seat so the pin's 4 mm head can be pushed in from the front
+seat=seat.cut(pcut)
+for _sz in (-1,1):                          # clear the seat's chamfer where the corner snap arms flex out
+    for _x0,_x1 in ((-31.6,-26.6),(22.9,27.9)):
+        seat=seat.cut(zbox(_x0,_x1,LENS+0.6,LENS+5,(15.6 if _sz>0 else -21),(21 if _sz>0 else -15.6)))
+snaps.append(seat)
 print("snaps valid",[x.isValid() for x in snaps])
 supports=snaps[0]
 for x_ in snaps[1:]: supports=supports.fuse(x_)
@@ -214,7 +218,10 @@ _c=_b.removeSplitter(); print("splitter valid",_c.isValid())
 body=_c if _c.isValid() else _b
 print("after supports valid",body.isValid())
 body=body.cut(tun)          # re-open the USB-C tunnel (the bottom ledge had filled it)
-gw=toW(body); body=toF(gw.cut(groove)); print("after tun/groove valid",body.isValid())
+SGRV=Part.Face(rr_wire(PW,PH,PR,LENS-0.1)).extrude(V(0,1.1,0)).cut(Part.Face(rr_wire(PW-2.0,PH-2.0,PR-1.0,LENS-0.1)).extrude(V(0,1.1,0)))
+body=body.cut(SGRV)                       # continuous 1.0 x 1.0 mm groove in the seat for the plate's lip
+body=body.cut(win).cut(slot)                # re-open the wheel window and hub pocket (the seat chamfer had filled part of it)
+print("after tun+groove valid",body.isValid())
 for px in(-11.15,11.15):   # button pin holes: one straight bore from the tab's gap out through the side wall
     bp=P(px,-3.35,-30.3)
     body=body.cut(Part.makeCylinder(0.8,12,V(31.5,bp.y,bp.z),V(1,0,0)))
