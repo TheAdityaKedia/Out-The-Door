@@ -67,9 +67,10 @@ body,lens,inner=toF(bw),toF(lensw),toF(iw)
 AAW,AAH=48.54,23.70
 ow_,oh_,or_=W-2*RF-0.2,H-2*RF-0.2,RC-RF-0.1
 iw_,ih_,ir_=AAW-0.6,AAH-0.6,0.8
-secs=[rr_wire(ow_+(iw_-ow_)*t, oh_+(ih_-oh_)*t, or_+(ir_-or_)*t, LENS*t**1.6) for t in (0.0,0.2,0.4,0.6,0.8,1.0)]
+SE=LENS
+secs=[rr_wire(ow_+(iw_-ow_)*t, oh_+(ih_-oh_)*t, or_+(ir_-or_)*t, SE*t**1.6) for t in (0.0,0.2,0.4,0.6,0.8,1.0)]
 slope=Part.makeLoft(secs,True,False)
-bcut=slope.fuse(Part.Face(rr_wire(iw_,ih_,ir_,LENS)).extrude(V(0,1.0,0))).fuse(Part.Face(rr_wire(ow_+2,oh_+2,or_+1,-1)).extrude(V(0,1.0,0)))
+bcut=slope.fuse(Part.Face(rr_wire(iw_,ih_,ir_,SE)).extrude(V(0,1.0,0))).fuse(Part.Face(rr_wire(ow_+2,oh_+2,or_+1,-1)).extrude(V(0,1.0,0)))
 bevel=lens.cut(bcut)
 # friction ridges: 0.45 mm proud (0.35 mm interference with the 0.1 mm pocket gap); 4 on top/bottom, 2 on the ends
 RP=0.45
@@ -83,7 +84,7 @@ print("bevel valid",bevel.isValid(),round(bevel.Volume,1))
 zb=-H/2
 # ---------- panel ----------
 pn=Part.read('/mnt/project-files/case/crowpanel_2.13.step')
-OY=LENS+0.1+0.9; CX=-2.625
+OY=LENS+0.7+0.9; CX=-2.625   # 0.7 mm gap glass-to-front (was 0.1: the panel pushed the front out)
 PM=App.Matrix(0,0,-1,CX, 0,-1,0,OY, -1,0,0,0, 0,0,0,1)   # F = PM * panel
 pnF=pn.transformed(PM)
 def P(px,py,pz): return PM.multVec(V(px,py,pz))
@@ -114,7 +115,7 @@ win=Part.makeBox(20,fy(-9.5)-fy(-2.1)+1.0,19.2,V(AX.x,fy(-2.1)-0.5,AX.z-9.6))
 body=body.cut(win)
 # axle post from the back wall, with a hole slotted 1.2 mm toward the wheel so a press clicks it
 post=cyl(3.4,fy(-9.5)+0.6,fy(-9.5)+40).common(inner.common(Part.makeBox(200,200,200,V(-100,-100,-100))))
-hole=cyl(1.45,fy(-9.5),fy(-9.5)+12)   # press fit for the 3 mm pin
+hole=cyl(1.6,fy(-9.5),fy(-9.5)+12)    # 3.2 mm: printed holes shrink, gives a snug push fit for the 3 mm pin
 body=body.fuse(post).cut(hole)
 # ---------- battery (103040, ~1500 mAh) ----------
 bat=Part.makeBox(40,10,30,V(-29.0,fy(-9.8)+0.6,-15))
@@ -176,6 +177,8 @@ supports=snaps[0]
 for x_ in snaps[1:]: supports=supports.fuse(x_)
 supports=supports.common(outerF)
 body=body.fuse(supports).removeSplitter()
+body=body.cut(tun)          # re-open the USB-C tunnel (the bottom ledge had filled it)
+gw=toW(body); body=toF(gw.cut(groove))
 for px in(-11.15,11.15):   # re-open the button pin holes through the end stops
     bp=P(px,-3.35,-30.3)
     body=body.cut(Part.makeCylinder(0.8,20,V(bp.x,bp.y,bp.z),V(1,0,0)))
@@ -196,6 +199,7 @@ for x in solids:
         v=knob.common(x).Volume
         if v>0.01: print("knob hits", round(v,2), x.BoundBox)
 print("pin path from front x body:",vol(cyl(1.6,-3,fy(-2.1)),body),"pin x body (should be ~press):",vol(pin,body))
+print("tunnel x body:",vol(tun,body)); print("bevel x panel:",round(sum(bevel.common(x).Volume for x in pnF.Solids if bevel.BoundBox.intersect(x.BoundBox)),3))
 print("knob x body:",vol(knob,body),"bat x body:",vol(bat,body),"bat x panel:",round(sum(bat.common(x).Volume for x in solids if bat.BoundBox.intersect(x.BoundBox)),2))
 print("panel x body:",round(sum(body.common(x).Volume for x in solids if body.BoundBox.intersect(x.BoundBox)),2))
 print("panel x lens:",round(sum(lens.common(x).Volume for x in solids if lens.BoundBox.intersect(x.BoundBox)),2))
