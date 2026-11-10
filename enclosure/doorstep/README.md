@@ -13,7 +13,7 @@ White clock-style case for the Elecrow CrowPanel ESP32-S3 2.13" e-paper board, w
 | `print-ready/` | Parts laid flat for printing, plus `doorstep_slope_plate.3mf` (one X2D plate) |
 | `docs/` | Assembly guide and preview images |
 
-Versions that were printed are tagged `doorstep-print-N` (`git tag -l 'doorstep-*'`). Print files are committed only for the current version; check out a tag and rebuild to get an older one.
+Versions that were printed are listed in TESTLOG.md with their commit and tagged `doorstep-print-N`. Print files are committed only for the current version; check out a tag and rebuild to get an older one.
 
 ## Printing
 Open `print-ready/doorstep_slope_plate.3mf` in Bambu Studio. Body and front in white, drum and pin in orange. The front prints on its lip ring with tree supports; the pin stands on its head. Buy 6 x 1 mm NBR O-rings for the drum hub (or print `latch_drum_orange_plain.stl`). Assembly: `docs/assembly_guide.png`.
