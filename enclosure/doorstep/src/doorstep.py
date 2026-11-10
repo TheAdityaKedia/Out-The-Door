@@ -1,7 +1,8 @@
 # Clock-style case for CrowPanel 2.13". Front frame F: front face plane y=0, outward -y, z up, x right.
 import FreeCAD as App, Part, math, os
 V=App.Vector
-OUT='/mnt/project-files/cloud-freecad/clock-case/'
+OUT='models/'   # run from enclosure/doorstep
+os.makedirs('build',exist_ok=True); os.makedirs(OUT,exist_ok=True)
 W,H,D,RC,LEAN=80.0,44.0,30.0,9.0,6.0
 WALL,RF,RB=1.8,3.0,4.0         # wall, front edge fillet, back edge fillet
 LENS=2.0                       # front pocket depth: 2 mm acrylic OR the 2 mm bevelled insert
@@ -85,7 +86,7 @@ bevel=bevel.removeSplitter()
 print("bevel valid",bevel.isValid(),round(bevel.Volume,1))
 zb=-H/2
 # ---------- panel ----------
-pn=Part.read('/mnt/project-files/case/crowpanel_2.13.step')
+pn=Part.read(os.environ.get('CROWPANEL_STEP','vendor/crowpanel_2.13.step'))
 OY=LENS+0.7+0.9; CX=-2.625   # 0.7 mm gap glass-to-front (was 0.1: the panel pushed the front out)
 PM=App.Matrix(0,0,-1,CX, 0,-1,0,OY, -1,0,0,0, 0,0,0,1)   # F = PM * panel
 pnF=pn.transformed(PM)
@@ -296,6 +297,6 @@ if not os.environ.get("CHECK"):
         import Mesh; m=Mesh.Mesh(); m.addFacets(w.tessellate(0.03)); m.write(OUT+n+'.stl')
     import pickle
     for n,sh in [('body',body),('lens',lens),('bevel',bevel),('knob',knob),('pin',pin),('bat',bat),('panel',pnF),('oring',oring)]:
-        sh.exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/ccF_'+n+'.brep')
-        toW(sh).exportBrep('/tmp/claude-0/-home-user-Out-The-Door/56822852-6d72-5c39-94af-40178e0e6955/scratchpad/fc/cc_'+n+'.brep')
+        sh.exportBrep('build/ccF_'+n+'.brep')
+        toW(sh).exportBrep('build/cc_'+n+'.brep')
     print("SAVED")
