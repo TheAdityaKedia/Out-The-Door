@@ -2,3 +2,5 @@
 vendor/
 # intermediate BREPs and render frames
 build/
+# assembled-position meshes (STEP is committed; print STLs live in print-ready/)
+models/*.stl
