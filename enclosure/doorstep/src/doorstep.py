@@ -253,7 +253,7 @@ for x in pnF.Solids:
         if v>0.01: print("support hits",round(v,2),x.BoundBox)
 print("support x bat",round(supports.common(bat).Volume,2),"support x knob",round(supports.common(knob).Volume,2))
 print("body valid",body.isValid())
-for _x in (-22.0,-8.0,8.0,18.0):   # plate pads
+for _x in ():   # plate pads removed (Adi: they ruined the print; no front-back wiggle)
     for _s in (-1,1):
         _zl,_zh=(14.75,15.45) if _s>0 else (-15.45,-14.75)
         bevel=bevel.fuse(zbox(_x-1.5,_x+1.5,LENS-0.01,yF-0.05,_zl,_zh))
