@@ -21,7 +21,7 @@ Each printable part gets its own number, bumped only when its STL changes. Every
 | front-4 | `737d85a` | `1c2e20c` | front-3 without the pads | P5 | [png](renders/front-4.png) |
 | drum-1 | `6566892` | `d515d98` | 18 mm, one piece with its axle | P1 | [png](renders/drum-1.png) |
 | drum-2 | `a8ac727` | `f99f9fc` | 18 mm, 3.5 mm bore on a separate pin | P2 | [png](renders/drum-2.png) |
-| drum-3 | `599d5c8` | `166a22b` | 24 mm, plain hub, sits deeper | not yet | [png](renders/drum-3.png) |
+| drum-3 | `599d5c8` | `166a22b` | 24 mm, plain hub, sits deeper (same shape as the `latch_drum_orange_plain.stl` made on 11-09) | P5 | [png](renders/drum-3.png) |
 | pin-1 | `8a42916` | `f99f9fc` | 3 mm plain pin | P2 | [png](renders/pin-1.png) |
 | pin-2 | `aecb9b9` | `1c2e20c` | 3 mm, 4 mm head, 17 mm | P5? | [png](renders/pin-2.png) |
 

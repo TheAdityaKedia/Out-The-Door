@@ -7,4 +7,4 @@ One file per print (P1, P2, ...): date, model commit, and per part the revision,
 | [P2](P02.md) | 11-09 | body-2, front-2, drum-2, pin-1 | USB hole blocked |
 | [P3](P03.md) | 11-09 | body-3 (front-2?) | |
 | [P4](P04.md) | 11-09 | front-3 (+?) | Abandoned: pads |
-| [P5](P05.md) | 11-09 night | front-4, body-4?, pin-2? | Pending |
+| [P5](P05.md) | 11-09 night | front-4, drum-3, body-4?, pin-2? | Pending |
