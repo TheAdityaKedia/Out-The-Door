@@ -104,22 +104,22 @@ def cyl(r,y0,y1,c=AX): return Part.makeCylinder(r,y1-y0,V(c.x,y0,c.z),ax)
 hub=cyl(2.85,fy(-2.1),fy(-3.2)).fuse(cyl(3.3,fy(-3.2),fy(-3.5)))
 oring=Part.Face(Part.Wire(Part.makeCircle(0.475,V(AX.x+3.325,fy(-2.65),AX.z),V(0,0,1))))
 oring=oring.revolve(V(AX.x,0,AX.z),V(0,1,0),360)
-spacer=cyl(2.5,fy(-3.5),fy(-4.2))
-RD=9.0; drum=cyl(RD,fy(-4.2),fy(-9.5))
-for i in range(60):
-    a_=2*math.pi*i/60
-    drum=drum.cut(Part.makeCylinder(0.4,10,V(AX.x+RD*math.cos(a_),fy(-4.2)-1,AX.z+RD*math.sin(a_)),ax))
+spacer=cyl(3.0,fy(-3.5),fy(-5.6))   # longer spacer: drum sits behind the wheel housing (y 8.7)
+RD=12.0; drum=cyl(RD,fy(-5.6),fy(-10.9))   # 24 mm drum: pops out ~3 mm more
+for i in range(80):
+    a_=2*math.pi*i/80
+    drum=drum.cut(Part.makeCylinder(0.4,10,V(AX.x+RD*math.cos(a_),fy(-5.6)-1,AX.z+RD*math.sin(a_)),ax))
 # drum spins on a separate 3 mm pin (assembly: drum goes in sideways through the wall window,
 # then the pin is pushed in from the front, through the drum, into a press-fit hole in the post)
-knob=hub.fuse(spacer).fuse(drum).removeSplitter().cut(cyl(1.8,fy(-2.1)-1,fy(-9.5)+1))   # 3.6 mm bore: prints ~3.3-3.4, spins free on the 3 mm pin
-YDB=fy(-9.5)                     # drum back face
+knob=hub.fuse(spacer).fuse(drum).removeSplitter().cut(cyl(1.8,fy(-2.1)-1,fy(-10.9)+1))   # 3.6 mm bore: prints ~3.3-3.4, spins free on the 3 mm pin
+YDB=fy(-10.9)                     # drum back face
 pin=cyl(1.5,fy(-2.1),YDB+7.5).fuse(cyl(2.0,fy(-2.1)-0.7,fy(-2.1)))   # 3 mm pin with a 4 mm head that keeps the drum on the wheel
 axle=pin
 # slot in the right wall for hub + drum (0.8 mm radial, 0.5 mm axial clearance)
-slot=cyl(RD+0.8,fy(-4.2)-0.5,fy(-9.5)+0.5).fuse(cyl(4.6,fy(-2.1)-0.5,fy(-4.2)-0.5))
+slot=cyl(RD+0.8,fy(-5.6)-0.5,fy(-10.9)+0.3).fuse(cyl(4.6,fy(-2.1)-0.5,fy(-5.6)-0.5))
 body=body.cut(slot)
 # straight-sided window through the right wall so the 18 mm drum can be passed in edge-first
-win=Part.makeBox(20,fy(-9.5)-fy(-4.2)+1.0,18.0,V(AX.x,fy(-4.2)-0.5,AX.z-9.0)).fuse(Part.makeBox(39.55-AX.x,fy(-4.2)-fy(-2.1),9.2,V(AX.x,fy(-2.1)-0.5,AX.z-4.6)))   # hub pocket stops 0.45 mm short of the outside
+win=Part.makeBox(20,fy(-10.9)-fy(-5.6)+0.8,24.2,V(AX.x,fy(-5.6)-0.5,AX.z-12.1)).fuse(Part.makeBox(39.55-AX.x,fy(-5.6)-fy(-2.1),9.2,V(AX.x,fy(-2.1)-0.5,AX.z-4.6)))   # hub pocket stops 0.45 mm short of the outside
 body=body.cut(win)
 # springy axle mount: a boss right behind the drum (0.2 mm gap, so the drum can't slide back off the wheel)
 # hung from the top wall on a thin arm that flexes sideways. The arm pushes the hub into the wheel;
@@ -195,7 +195,8 @@ for sz in (-1,1):
     # through the side-wall hole bends it onto the button. A ramped nub sits 0.08 mm off the plunger tip.
     wk=wk.cut(zbox(31.0,32.0,yb-0.75,14.0,z0-1,z1+1)).cut(zbox(30.2,32.0,yB+0.2,yb-0.75,z0-1,z1+1))
     nub=Part.Face(Part.makePolygon([V(30.2,yb-0.75,zc-0.5),V(29.85,yb,zc-0.5),V(29.85,yb+0.5,zc-0.5),V(30.2,yb+0.75,zc-0.5),V(30.2,yb-0.75,zc-0.5)])).extrude(V(0,0,1.0))
-    snaps.append(wk.fuse(nub))
+    dsw=Part.makeBox(AX.x+2.0+40,fy(-10.9)-fy(-5.6)+0.8,25.0,V(-40,fy(-5.6)-0.5,AX.z-12.5)).fuse(Part.makeCylinder(RD+0.5,fy(-10.9)-fy(-5.6)+0.8,V(AX.x+2.0,fy(-5.6)-0.5,AX.z),ax))
+    snaps.append(wk.fuse(nub).cut(dsw))
 # seat: ledge round the mouth 2 mm behind the face (the plate rests on it, so it always sits flush),
 # 45 deg chamfer underneath (prints back-down without supports); continuous tongue on it for the plate's groove
 PW,PH,PR=W-2*RF,H-2*RF,RC-RF                 # pocket outline 74 x 38 r 6
@@ -233,7 +234,12 @@ for x in pnF.Solids:
 print("support x bat",round(supports.common(bat).Volume,2),"support x knob",round(supports.common(knob).Volume,2))
 print("body valid",body.isValid())
 print("bevel x body (seat/tongue fit):",round(bevel.common(body).Volume,3))
-_kb=knob.copy(); _kb.translate(V(-(AX.x-26.0),-15,0)); print("drum fits mouth (x max at insertion):",round(_kb.BoundBox.XMax,2),"seat edge 35.1")
+_hits=[]
+for _dy in (-16,-12,-8,-4,-2,0):          # drop in at the left (drum x max 29.0), then slide right
+    _kb=knob.copy(); _kb.translate(V(29.0-(AX.x+RD),_dy,0)); _hits.append(round(_kb.common(body).Volume,2))
+for _dx in (0,4,8,12,(AX.x+RD-29.0)):
+    _kb=knob.copy(); _kb.translate(V(29.0-(AX.x+RD)+_dx,0,0)); _hits.append(round(_kb.common(body).Volume,2))
+print("drum insertion path x body:",_hits)
 # ---------- checks ----------
 cav=inner
 def vol(a,b):
