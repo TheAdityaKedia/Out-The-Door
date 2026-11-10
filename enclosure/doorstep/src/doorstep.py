@@ -218,6 +218,26 @@ _b=body.fuse(supports); print("fuse no-splitter valid",_b.isValid())
 _c=_b.removeSplitter(); print("splitter valid",_c.isValid())
 body=_c if _c.isValid() else _b
 print("after supports valid",body.isValid())
+# ---------- lock the board: rigid edge stops + leaf springs behind it ----------
+# edge stops: ribs from the top/bottom walls 0.1 mm off the board's long edges (in front of the ledges),
+# so a USB plug pushed up from below meets solid wall, not the springy corner hooks
+for _x,_s in [(-20.0,1),(uc.x,1),(15.0,1),(-20.0,-1),(uc.x-8.5,-1),(uc.x+8.5,-1),(15.0,-1)]:
+    _zl,_zh=(15.7,23) if _s>0 else (-23,-15.7)
+    body=body.fuse(zbox(_x-1.5,_x+1.5,yF,yB,_zl,_zh).common(outerF))
+# leaf springs: short 0.5 mm cantilevers cut into the long ledges (in gaps between the board's parts), each
+# with a bump 0.3 mm proud of the board's back face. They push the board forward against the corner hooks.
+SPR=[]
+for _s,_r,_L in [(1,-26.1,4.5),(1,8.0,4.5),(-1,-26.6,4.0),(-1,-19.5,4.5)]:
+    _zl,_zh=(14.6,15.8) if _s>0 else (-15.8,-14.6)
+    body=body.cut(zbox(_r,_r+_L+0.5,yB-0.01,yB+1.8,_zl,_zh))
+    _bm=zbox(_r-0.5,_r+_L,yB+0.4,yB+0.9,_zl,_zh)
+    _bp=zbox(_r+_L-0.8,_r+_L,yB-0.3,yB+0.4,(14.7 if _s>0 else -15.5),(15.5 if _s>0 else -14.7))
+    SPR.append(_bp); body=body.fuse(_bm.fuse(_bp))
+body=body.removeSplitter() if body.removeSplitter().isValid() else body
+print("after lock valid",body.isValid())
+for _p in SPR:
+    for x in pnF.Solids:
+        if x.Volume<3000 and _p.BoundBox.intersect(x.BoundBox) and _p.common(x).Volume>0.001: print("spring bump hits part",x.BoundBox)
 body=body.cut(tun)          # re-open the USB-C tunnel (the bottom ledge had filled it)
 SGRV=Part.Face(rr_wire(PW,PH,PR,LENS-0.1)).extrude(V(0,1.1,0)).cut(Part.Face(rr_wire(PW-2.0,PH-2.0,PR-1.0,LENS-0.1)).extrude(V(0,1.1,0)))
 body=body.cut(SGRV)                       # continuous 1.0 x 1.0 mm groove in the seat for the plate's lip
@@ -233,6 +253,12 @@ for x in pnF.Solids:
         if v>0.01: print("support hits",round(v,2),x.BoundBox)
 print("support x bat",round(supports.common(bat).Volume,2),"support x knob",round(supports.common(knob).Volume,2))
 print("body valid",body.isValid())
+for _x in (-22.0,-8.0,8.0,18.0):   # plate pads
+    for _s in (-1,1):
+        _zl,_zh=(14.75,15.45) if _s>0 else (-15.45,-14.75)
+        bevel=bevel.fuse(zbox(_x-1.5,_x+1.5,LENS-0.01,yF-0.05,_zl,_zh))
+bevel=bevel.removeSplitter()
+print("plate pads to board front gap:",round(min(bevel.distToShape(x)[0] for x in pnF.Solids if x.BoundBox.ZMax>15 and x.BoundBox.YMin<3.7),3))
 print("bevel x body (seat/tongue fit):",round(bevel.common(body).Volume,3))
 _hits=[]
 for _dy in (-16,-12,-8,-4,-2,0):          # drop in at the left (drum x max 29.0), then slide right
