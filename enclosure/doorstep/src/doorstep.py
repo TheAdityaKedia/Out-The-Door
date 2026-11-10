@@ -100,11 +100,8 @@ AX=P(0,0,-27-7.3-4+1.85)         # axle centre, 1.85 mm nominal into the wheel: 
                                   # real-world error (test print missed by ~1.3 mm) and keeps the hub pressed on
 ax=V(0,1,0)
 def cyl(r,y0,y1,c=AX): return Part.makeCylinder(r,y1-y0,V(c.x,y0,c.z),ax)
-# hub carries a rubber tyre: 6 mm ID x 1 mm nitrile O-ring stretched into a groove open at the front
-# (floor r 2.85, back flange r 3.3, so only rubber can touch the wheel); the rubber (outer r ~3.8) is what touches the wheel
-hub=cyl(2.85,fy(-2.1),fy(-3.2)).fuse(cyl(3.3,fy(-3.2),fy(-3.5)))
-oring=Part.Face(Part.Wire(Part.makeCircle(0.475,V(AX.x+3.325,fy(-2.65),AX.z),V(0,0,1))))
-oring=oring.revolve(V(AX.x,0,AX.z),V(0,1,0),360)
+# plain PLA hub (r 4), like the print-2 drum that clicks well on the springy mount (O-ring tyre dropped 2026-11-10)
+hub=cyl(4.0,fy(-2.1),fy(-3.5))
 spacer=cyl(3.0,fy(-3.5),fy(-5.6))   # longer spacer: drum sits behind the wheel housing (y 8.7)
 RD=12.0; drum=cyl(RD,fy(-5.6),fy(-10.9))   # 24 mm drum: pops out ~3 mm more
 for i in range(80):
@@ -277,11 +274,6 @@ for x in solids:
     if knob.BoundBox.intersect(x.BoundBox):
         v=knob.common(x).Volume
         if v>0.01: print("knob hits", round(v,2), x.BoundBox)
-for x in solids:
-    if oring.BoundBox.intersect(x.BoundBox):
-        v=oring.common(x).Volume
-        if v>0.01: print("oring presses wheel", round(v,2), x.BoundBox)
-print("oring vol",round(oring.Volume,2),"outer r",round(oring.BoundBox.XMax-AX.x,2))
 print("pin path from front x body:",vol(cyl(1.6,-3,fy(-2.1)),body),"pin x body (should be ~press):",vol(pin,body))
 print("tunnel x body:",vol(tun,body)); print("bevel x panel:",round(sum(bevel.common(x).Volume for x in pnF.Solids if bevel.BoundBox.intersect(x.BoundBox)),3))
 print("boss to right wall gap:", round(min(f.distToShape(boss)[0] for f in [Part.makeBox(1,40,10,V(38.2,YDB,-5))]),2)); print("arm length:",round(sarm.BoundBox.ZLength,1), sarm.BoundBox, "vol",round(sarm.Volume,1)); print("pinhead vs wheel x:", round(pin.BoundBox.XMax,2), "drum front y", round(pin.BoundBox.YMin,2)); print("pin len",round(pin.BoundBox.YLength,2),"hole depth 7.7")
@@ -296,7 +288,7 @@ if not os.environ.get("CHECK"):
         w=toW(sh); w.exportStep(OUT+n+'.step')
         import Mesh; m=Mesh.Mesh(); m.addFacets(w.tessellate(0.03)); m.write(OUT+n+'.stl')
     import pickle
-    for n,sh in [('body',body),('lens',lens),('bevel',bevel),('knob',knob),('pin',pin),('bat',bat),('panel',pnF),('oring',oring)]:
+    for n,sh in [('body',body),('lens',lens),('bevel',bevel),('knob',knob),('pin',pin),('bat',bat),('panel',pnF)]:
         sh.exportBrep('build/ccF_'+n+'.brep')
         toW(sh).exportBrep('build/cc_'+n+'.brep')
     print("SAVED")

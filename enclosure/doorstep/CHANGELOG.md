@@ -81,3 +81,6 @@ The screen sits in the same place for both (glass 0.1 mm behind the insert). Pan
 - 8 pads on the front plate's back, 0.05 mm off the board's bare top/bottom rim (not the glass), so the board can't come forward in a drop while the plate is on. The plate now prints standing on these pads: use tree supports.
 - Manufacturing note: for molding or a metal shell, move these inner features into a separate plastic inner frame.
 - Plate pads removed (2026-11-10): they printed first as tiny islands and wrecked the plate print; Adi sees no front-back wiggle without them. Plate prints standing on its lip ring with tree supports.
+
+## Plain hub, O-ring dropped (2026-11-10)
+- Print 3 showed the springy mount makes a plain PLA hub catch the wheel and turn it with clean clicks (Adi likes the tactile turn). The O-ring groove is gone: the 24 mm drum now has a plain r 4 hub (1.85 mm nominal into the wheel, held there by the arm). Pressing travel ends at 1.78 mm, where the boss meets the wall and the hub meets the pocket skin together.
