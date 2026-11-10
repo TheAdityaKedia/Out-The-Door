@@ -74,11 +74,12 @@ bcut=slope.fuse(Part.Face(rr_wire(iw_,ih_,ir_,SE)).extrude(V(0,1.0,0))).fuse(Par
 bevel=lens.cut(bcut)
 # friction ridges: 0.45 mm proud (0.35 mm interference with the 0.1 mm pocket gap); 4 on top/bottom, 2 on the ends
 RP=0.45
-for bx in (-16.0,16.0):
+for bx in ():
     for sz in (-1,1):
         bevel=bevel.fuse(Part.makeCylinder(0.6,6,V(bx-3,LENS/2,sz*(oh_/2-0.6+RP)),V(1,0,0)))
-for sx in (-1,1):
-    bevel=bevel.fuse(Part.makeCylinder(0.6,8,V(sx*(ow_/2-0.6+RP),LENS/2,-4),V(0,0,1)))
+# continuous groove in the plate's back (1.0 wide, 1.0 deep, 0.5 mm in from its edge) takes the body's tongue
+GRV=Part.Face(rr_wire(ow_-1.0,oh_-1.0,or_-0.5,LENS-1.0)).extrude(V(0,1.1,0)).cut(Part.Face(rr_wire(ow_-3.0,oh_-3.0,or_-1.5,LENS-1.0)).extrude(V(0,1.1,0)))
+bevel=bevel.cut(GRV)
 bevel=bevel.removeSplitter()
 print("bevel valid",bevel.isValid(),round(bevel.Volume,1))
 zb=-H/2
@@ -114,10 +115,10 @@ YDB=fy(-9.5)                     # drum back face
 pin=cyl(1.5,fy(-2.1),YDB+7.5).fuse(cyl(2.0,fy(-2.1)-0.7,fy(-2.1)))   # 3 mm pin with a 4 mm head that keeps the drum on the wheel
 axle=pin
 # slot in the right wall for hub + drum (0.8 mm radial, 0.5 mm axial clearance)
-slot=cyl(RD+0.8,fy(-2.1)-0.5,fy(-9.5)+0.5)
+slot=cyl(RD+0.8,fy(-4.2)-0.5,fy(-9.5)+0.5).fuse(cyl(4.6,fy(-2.1)-0.5,fy(-4.2)-0.5))
 body=body.cut(slot)
 # straight-sided window through the right wall so the 18 mm drum can be passed in edge-first
-win=Part.makeBox(20,fy(-9.5)-fy(-2.1)+1.0,19.2,V(AX.x,fy(-2.1)-0.5,AX.z-9.6))
+win=Part.makeBox(20,fy(-9.5)-fy(-4.2)+1.0,18.0,V(AX.x,fy(-4.2)-0.5,AX.z-9.0)).fuse(Part.makeBox(20,fy(-4.2)-fy(-2.1),9.2,V(AX.x,fy(-2.1)-0.5,AX.z-4.6)))
 body=body.cut(win)
 # springy axle mount: a boss right behind the drum (0.2 mm gap, so the drum can't slide back off the wheel)
 # hung from the top wall on a thin arm that flexes sideways. The arm pushes the hub into the wheel;
@@ -180,23 +181,52 @@ for sz in (-1,1):   # far end: two corner ribs, middle left open for the panel's
     snaps.append(zbox(-40,xFar,yF-0.4,40,(10.5 if sz>0 else -14.5),(14.5 if sz>0 else -10.5)))
 for sz in (-1,1):
     z0,z1=(10,14) if sz>0 else (-14,-10)
-    snaps.append(zbox(xWheel,xWheel+1.6,yF-0.4,yB+0.8,z0,z1))      # touches the PCB end, in front of the button plungers
-    snaps.append(zbox(30.2,31.8,yF-0.4,40,z0,z1))                   # back to the wall, beyond the plungers
+    zc=11.15 if sz>0 else -11.15; yb=fy(-3.35)        # button plunger centre (tip at x 29.78)
+    wk=zbox(xWheel,30.2,yF-0.4,yB+0.2,z0,z1)           # end stop: touches the PCB end, in front of the plunger
+    wk=wk.fuse(zbox(30.2,38.6,yF-0.4,14.6,z0,z1))      # solid block tied into the side wall
+    wk=wk.fuse(zbox(30.2,32.4,14.6,40,z0,z1))          # pillar to the back wall
+    zo=(z1,z1+5) if sz>0 else (z0-5,z0)                 # base gussets (body prints back-down: bed = back wall)
+    g1=Part.Face(Part.makePolygon([V(30.2,18,z1 if sz>0 else z0),V(30.2,40,z1 if sz>0 else z0),V(30.2,40,(z1 if sz>0 else z0)+5*sz),V(30.2,18,z1 if sz>0 else z0)])).extrude(V(2.2,0,0))
+    g2=Part.Face(Part.makePolygon([V(30.2,18,z0 if sz>0 else z1),V(30.2,40,z0 if sz>0 else z1),V(30.2,40,(z0-5) if sz>0 else (z1+5)),V(30.2,18,z0 if sz>0 else z1)])).extrude(V(2.2,0,0))
+    g3=Part.Face(Part.makePolygon([V(32.4,20,z0),V(32.4,40,z0),V(37.4,40,z0),V(32.4,20,z0)])).extrude(V(0,0,z1-z0))
+    wk=wk.fuse(g1).fuse(g2).fuse(g3)
+    # press tab: 0.8 mm leaf facing the plunger, free at the front, 1 mm gap behind it; a pin pushed
+    # through the side-wall hole bends it onto the button. A ramped nub sits 0.08 mm off the plunger tip.
+    wk=wk.cut(zbox(31.0,32.0,yb-0.75,14.0,z0-1,z1+1)).cut(zbox(30.2,32.0,yB+0.2,yb-0.75,z0-1,z1+1))
+    nub=Part.Face(Part.makePolygon([V(30.2,yb-0.75,zc-0.5),V(29.85,yb,zc-0.5),V(29.85,yb+0.5,zc-0.5),V(30.2,yb+0.75,zc-0.5),V(30.2,yb-0.75,zc-0.5)])).extrude(V(0,0,1.0))
+    snaps.append(wk.fuse(nub))
+# seat: ledge round the mouth 2 mm behind the face (the plate rests on it, so it always sits flush),
+# 45 deg chamfer underneath (prints back-down without supports); continuous tongue on it for the plate's groove
+PW,PH,PR=W-2*RF,H-2*RF,RC-RF                 # pocket outline 74 x 38 r 6
+seat=Part.Face(rr_wire(PW+6,PH+6,PR+3,LENS)).extrude(V(0,3.5,0)).cut(Part.makeLoft([rr_wire(PW-3.8,PH-3.8,PR-1.9,LENS-0.01),rr_wire(PW-3.8,PH-3.8,PR-1.9,LENS+0.3),rr_wire(PW+2.6,PH+2.6,PR+1.3,LENS+3.5)],True,True))
+tng=Part.Face(rr_wire(PW-1.4,PH-1.4,PR-0.7,LENS-0.9)).extrude(V(0,0.95,0)).cut(Part.Face(rr_wire(PW-3.0,PH-3.0,PR-1.5,LENS-0.9)).extrude(V(0,0.95,0)))
+pcut=Part.Shape(cyl(2.4,-3,fy(-2.1)))      # notch seat + tongue so the pin's 4 mm head can be pushed in from the front
+snaps.append(seat.fuse(tng).cut(pcut))
+print("snaps valid",[x.isValid() for x in snaps])
 supports=snaps[0]
 for x_ in snaps[1:]: supports=supports.fuse(x_)
 supports=supports.common(outerF)
-body=body.fuse(supports).removeSplitter()
+if os.environ.get("DIAG"):
+    for i,x_ in enumerate(snaps):
+        print("fuse",i,body.fuse(x_.common(outerF)).isValid())
+_b=body.fuse(supports); print("fuse no-splitter valid",_b.isValid())
+_c=_b.removeSplitter(); print("splitter valid",_c.isValid())
+body=_c if _c.isValid() else _b
+print("after supports valid",body.isValid())
 body=body.cut(tun)          # re-open the USB-C tunnel (the bottom ledge had filled it)
-gw=toW(body); body=toF(gw.cut(groove))
-for px in(-11.15,11.15):   # re-open the button pin holes through the end stops
+gw=toW(body); body=toF(gw.cut(groove)); print("after tun/groove valid",body.isValid())
+for px in(-11.15,11.15):   # button pin holes: one straight bore from the tab's gap out through the side wall
     bp=P(px,-3.35,-30.3)
-    body=body.cut(Part.makeCylinder(0.8,20,V(bp.x,bp.y,bp.z),V(1,0,0)))
+    body=body.cut(Part.makeCylinder(0.8,12,V(31.5,bp.y,bp.z),V(1,0,0)))
+print("after pinholes valid",body.isValid())
 for x in pnF.Solids:
     if x.BoundBox.intersect(supports.BoundBox):
         v=supports.common(x).Volume
         if v>0.01: print("support hits",round(v,2),x.BoundBox)
 print("support x bat",round(supports.common(bat).Volume,2),"support x knob",round(supports.common(knob).Volume,2))
 print("body valid",body.isValid())
+print("bevel x body (seat/tongue fit):",round(bevel.common(body).Volume,3))
+_kb=knob.copy(); _kb.translate(V(-(AX.x-26.0),-15,0)); print("drum fits mouth (x max at insertion):",round(_kb.BoundBox.XMax,2),"seat edge 35.1")
 # ---------- checks ----------
 cav=inner
 def vol(a,b):
