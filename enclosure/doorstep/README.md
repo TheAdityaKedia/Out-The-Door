@@ -5,15 +5,21 @@ White clock-style case for the Elecrow CrowPanel ESP32-S3 2.13" e-paper board, w
 | File | What it is |
 |---|---|
 | [REQUIREMENTS.md](REQUIREMENTS.md) | Rules every new version must meet, each from a real print problem |
-| [TESTLOG.md](TESTLOG.md) | One line per print: version, what worked, what didn't |
+| [parts.md](parts.md) | Every part revision (body-4, drum-2, ...) and its commit |
+| [prints/](prints/README.md) | Print log: one file per print, parts and settings |
+| [assemblies/](assemblies/README.md) | Assembly log: which parts went together and how it went |
 | [CHANGELOG.md](CHANGELOG.md) | Design notes for every change |
 | `src/doorstep.py` | The whole model and its fit checks (headless FreeCAD) |
 | `scripts/` | Print layout, 3MF plate, renders, checks |
-| `models/` | Parts in assembled position (STEP + STL) |
+| `models/` | Parts in assembled position (STEP) |
 | `print-ready/` | Parts laid flat for printing, plus `doorstep_slope_plate.3mf` (one X2D plate) |
 | `docs/` | Assembly guide and preview images |
 
-Versions that were printed are listed in TESTLOG.md with their commit and tagged `doorstep-print-N`. Print files are committed only for the current version; check out a tag and rebuild to get an older one.
+## Conventions
+- An STL change is its own commit, one STL per commit, titled `stl: <part>-<n> (what changed)`, with a row added to `parts.md`. Numbers go up per part, only when that part's STL changes.
+- Every other commit (model, scripts, docs) is free-form.
+- After each print add `prints/Pnn.md`; after each build add `assemblies/Ann.md`.
+- Note: model commits before 2026-11-10 19:00 UTC show UTC clock times labelled -0700.
 
 ## Printing
 Open `print-ready/doorstep_slope_plate.3mf` in Bambu Studio. Body and front in white, drum and pin in orange. The front prints on its lip ring with tree supports; the pin stands on its head. Assembly: `docs/assembly_guide.png`.
