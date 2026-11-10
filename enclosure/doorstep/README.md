@@ -18,7 +18,7 @@ White clock-style case for the Elecrow CrowPanel ESP32-S3 2.13" e-paper board, w
 ## Conventions
 - An STL change is its own commit, one STL per commit, titled `stl: <part>-<n> (what changed)`, with a row added to `parts.md` and a before/after render in `renders/<part>-<n>.png` in the same commit (`scripts/render_stl.py` + `scripts/compose_revision.py`). Numbers go up per part, only when that part's STL changes.
 - Every other commit (model, scripts, docs) is free-form.
-- After each print add `prints/Pnn.md` with Adi's photos in `prints/Pnn/`; after each build add `assemblies/Ann.md` with photos in `assemblies/Ann/`. Photos are shrunk to ~1600 px with location data stripped (public repo). Videos are linked, not committed.
+- After each print add `prints/Pnn.md` with Adi's photos in `prints/Pnn/`; after each build add `assemblies/Ann.md` with photos in `assemblies/Ann/`. Photos are shrunk to ~1600 px with location data stripped (public repo). Videos go in Google Drive (Out the Door/doorstep, https://drive.google.com/drive/folders/1XHWbFbfmchYWIL0dIsVOEYYHbMrPAYiV, one subfolder per assembly) and are linked from the assembly page, not committed.
 - Note: model commits before 2026-11-10 19:00 UTC show UTC clock times labelled -0700.
 
 ## Printing
