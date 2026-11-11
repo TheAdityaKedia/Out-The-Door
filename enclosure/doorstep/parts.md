@@ -16,7 +16,7 @@ Each printable part gets its own number, bumped only when its STL changes. Every
 | body-3 | `4227a07` | `d340d7d` | USB re-cut, board mount 0.6 mm deeper, springy drum arm | P3 | [png](renders/body-3.png) |
 | body-4 | `c2b81ba` | `23641a8` | Seat + groove for the plate lip, press tabs, gussets, 24 mm drum slot, edge stops + leaf springs | P5 | [png](renders/body-4.png) |
 | front-1 | `ed0c579` | `d515d98` | 4 friction ridges, 0.25 mm | P1 | [png](renders/front-1.png) |
-| front-2 | `69a13b2` | `f99f9fc` | 6 ridges, 0.45 mm | P2 (and P3?) | [png](renders/front-2.png) |
+| front-2 | `69a13b2` | `f99f9fc` | 6 ridges, 0.45 mm | P2, P3 | [png](renders/front-2.png) |
 | front-3 | `e2cecd9` | `23641a8` | Continuous lip, window flush with live area, pads on the back | P4 (failed) | [png](renders/front-3.png) |
 | front-4 | `737d85a` | `1c2e20c` | front-3 without the pads | P5 | [png](renders/front-4.png) |
 | drum-1 | `6566892` | `d515d98` | 18 mm, one piece with its axle | P1 | [png](renders/drum-1.png) |

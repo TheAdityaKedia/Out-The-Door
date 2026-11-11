@@ -12,7 +12,7 @@ How we design, version, print and test cases. Each case lives in its own folder 
 | `models/` | Parts in assembled position, STEP only |
 | `renders/` | One before/after image per part revision |
 | `parts.md` | Index of every part revision |
-| `prints/` | Print log: `Pnn.md` per print, photos in `Pnn/` |
+| `prints/` | Print log: `Pnn.md` per print (parts and settings only) |
 | `assemblies/` | Assembly log: `Ann.md` per build, photos in `Ann/` |
 | `REQUIREMENTS.md` | Rules every new version must meet, each from a real print problem |
 | `CHANGELOG.md` | Design notes for each model change |
@@ -34,25 +34,26 @@ How we design, version, print and test cases. Each case lives in its own folder 
 - No git tags: the cloud sessions can't push them, and the `stl:` titles plus `parts.md` do the same job.
 
 ## Print log (`prints/Pnn.md`)
-One file per print job, numbered P1, P2, ... in order. Each one records:
-- date (Pacific time) and the printer;
-- every part on the plate: revision, filament/colour, slicer settings (layer height, walls, infill, supports, orientation), and how it came out;
-- print problems (failed parts, stringing, warping, a print abandoned partway);
-- Adi's photos in `prints/Pnn/`, embedded in the page.
+One file per print job, numbered P1, P2, ... in order. It records only what was printed and how:
+- date (Pacific time), printer and model commit;
+- every part on the plate: revision, filament/colour, slicer settings (layer height, walls, infill, supports, orientation);
+- whether the print was stopped partway.
+
+How the parts came out (stringing, support scars) and everything else goes in the assembly log.
 
 Add a row to `prints/README.md` too.
 
 ## Assembly log (`assemblies/Ann.md`)
 One file per build, numbered A1, A2, ... A build can mix parts from several prints. Each one records:
 - the parts used, as `body-3 (P3) + drum-2 (P2) + ...`;
-- what worked, what didn't, and how it felt in the hand;
+- all feedback: print quality of each part, fit, what worked, what didn't, how it felt in the hand;
 - photos in `assemblies/Ann/`, embedded;
 - links to videos in Google Drive.
 
 Add a row to `assemblies/README.md` too. A problem a build shows that any future version must avoid also goes into `REQUIREMENTS.md`.
 
 ## Photos and videos
-- Adi posts photos and videos in the project thread, and Claude files them.
+- Adi posts photos and videos in the project thread, and Claude files them in the assembly they belong to.
 - Photos are committed after shrinking to about 1600 px on the long side and stripping location data (EXIF), because the repo is public.
 - Videos are not committed. They go in Google Drive, in `Out the Door/<case>/Ann/` (Doorstep: https://drive.google.com/drive/folders/1XHWbFbfmchYWIL0dIsVOEYYHbMrPAYiV), and the assembly page links to them. If a video is too big to upload from the cloud, it stays in the project files and is linked from there.
 

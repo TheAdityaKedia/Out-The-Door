@@ -6,7 +6,7 @@ White clock-style case for the Elecrow CrowPanel ESP32-S3 2.13" e-paper board, w
 |---|---|
 | [REQUIREMENTS.md](REQUIREMENTS.md) | Rules every new version must meet, each from a real print problem |
 | [parts.md](parts.md) | Every part revision (body-4, drum-2, ...) and its commit |
-| [prints/](prints/README.md) | Print log: one file per print, parts and settings |
+| [prints/](prints/README.md) | Print log: what was printed and with what settings |
 | [assemblies/](assemblies/README.md) | Assembly log: which parts went together and how it went |
 | [CHANGELOG.md](CHANGELOG.md) | Design notes for every change |
 | `src/doorstep.py` | The whole model and its fit checks (headless FreeCAD) |
