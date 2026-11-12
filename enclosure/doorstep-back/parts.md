@@ -12,3 +12,4 @@ Same rules as [Doorstep](../doorstep/parts.md): each part has its own number, bu
 | Revision | Commit | Model commit | What changed | Printed in | Render |
 |---|---|---|---|---|---|
 | body-1 | `e9b0567` | `5a48217` | One piece with a bevelled front; board loads from the back onto front pads, 4 snap arms | | [png](renders/body-1.png) |
+| cap-1 | `902b35f` | `5a48217` | Full back cap, locating lips, 4 snap tabs | | [png](renders/cap-1.png) |
