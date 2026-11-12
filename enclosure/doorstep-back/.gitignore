@@ -1,0 +1,6 @@
+# Elecrow's CrowPanel STEP (third-party, ~20 MB): download it here, see README
+vendor/
+# intermediate BREPs and render frames
+build/
+# assembled-position meshes (STEP is committed; print STLs live in print-ready/)
+models/*.stl

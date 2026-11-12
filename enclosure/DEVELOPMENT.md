@@ -1,6 +1,6 @@
 # Enclosure development
 
-How we design, version, print and test cases. Each case lives in its own folder (`doorstep/` is the first). These rules apply to all of them.
+How we design, version, print and test cases. Each case lives in its own folder (`doorstep/`, `doorstep-back/`). These rules apply to all of them.
 
 ## Folder layout (per case)
 
